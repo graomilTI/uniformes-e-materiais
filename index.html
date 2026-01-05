@@ -1,722 +1,641 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <title>Gestor – Uniformes e Materiais</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <style>
-    body{ margin:0; font-family:Arial,sans-serif; background:#f5f6f7; }
-    .wrap{ max-width:1100px; margin:auto; padding:14px 14px 120px; }
-    .card{ background:#fff; border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
-    h2,h3{ margin:0 0 8px; }
-    .muted{ color:#6b7280; font-size:12px; white-space:pre-line; }
-    input,select,button{ width:100%; padding:10px; border-radius:12px; border:1px solid #d1d5db; font-size:14px; box-sizing:border-box; }
-    button{ cursor:pointer; border:none; background:#166534; color:#fff; font-weight:800; }
-    button.secondary{ background:#374151; }
-    button.danger{ background:#111827; }
-    button:disabled{ opacity:.6; cursor:not-allowed; }
+/****************************************************
+ * WEB APP – UNIFORMES + MATERIAIS
+ * PIN -> lista mais recente -> salva -> PDF b64
+ ****************************************************/
 
-    .row{ display:flex; gap:10px; flex-wrap:wrap; }
-    .col{ flex:1; min-width:220px; }
+/************ IDS / ABAS ************/
+const DESPESAS_SPREADSHEET_ID = "1lamDPJfXtaOaRYQZts9XpPQbbTIsVgFu0aGjDhhpPVU";
+const ABA_GESTORES = "Gestores";
 
-    .pill{ display:inline-block; padding:4px 10px; background:#e0f2fe; border-radius:999px; font-size:12px; margin-top:6px; }
+// histórico diário (cada aba = dd/MM/yyyy)
+const COLAB_ATIVOS_SPREADSHEET_ID = "1zSRANpSVVi861X5siY2Ivg6v45SCXxi8Nxtwlzm68v8";
 
-    .topbar{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
-    .logoutBtn{ width:auto; padding:9px 14px; border-radius:999px; background:#111827; }
+// destino (mesma para uniformes e materiais)
+const DEST_SPREADSHEET_ID = "17RU_ocNZX9dSKj6CTRZiHcqW78Tkec2ZyGGJwy7eXYU";
+const DEST_ABA_COLAB = "Colaboradores";
+const DEST_ABA_SUP   = "Supervisão";
+const DEST_ABA_MAT   = "Materiais";
 
-    .list{ margin-top:10px; }
+const TAMANHOS = ["PP","P","M","G","GG","XG","G1","G2","G3"];
 
-    .item{
-      display:grid;
-      grid-template-columns: 1fr 220px;
-      gap:10px;
-      align-items:center;
-      padding:10px 0;
-      border-bottom:1px solid #f3f4f6;
-    }
-    .item:last-child{ border-bottom:none; }
-    .nm{ font-weight:800; font-size:13px; }
-    .sub{ font-size:11px; color:#6b7280; margin-top:2px; }
-
-    .bottomBar{ position:fixed; left:0; right:0; bottom:0; background:#f5f6f7; border-top:1px solid #e5e7eb; padding:10px; }
-    .bottomBar .inner{ max-width:1100px; margin:auto; display:flex; gap:10px; flex-wrap:wrap; }
-    .bottomBar .inner button{ width:auto; min-width:160px; }
-
-    .pdfArea a{ display:inline-block; margin-top:8px; font-weight:800; color:#166534; text-decoration:none; }
-
-    .menuGrid{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(220px, 1fr));
-      gap:10px;
-      margin-top:10px;
-    }
-    .menuBtn{
-      padding:16px;
-      border-radius:14px;
-      background:#166534;
-      color:#fff;
-      font-weight:900;
-      text-align:left;
-      box-shadow:0 1px 3px rgba(0,0,0,.06);
-    }
-    .menuBtn .small{
-      display:block;
-      font-weight:600;
-      opacity:.9;
-      margin-top:6px;
-      font-size:12px;
-    }
-    .menuBtn.secondary{ background:#0f172a; }
-
-    .qtyRow{
-      display:grid;
-      grid-template-columns: 1fr 120px;
-      gap:10px;
-      align-items:center;
-      padding:10px 0;
-      border-bottom:1px solid #f3f4f6;
-    }
-    .qtyRow:last-child{ border-bottom:none; }
-    .qtyRow .matName{ font-weight:800; font-size:13px; }
-    .qtyRow input[type="number"]{ text-align:center; }
-
-    .othersRow{
-      display:grid;
-      grid-template-columns: 1fr 120px 42px;
-      gap:10px;
-      align-items:center;
-      padding:10px 0;
-      border-bottom:1px solid #f3f4f6;
-    }
-    .othersRow:last-child{ border-bottom:none; }
-
-    /* ✅ OUTROS UNIFORMES (nome + select) */
-    .othersUniRow{
-      display:grid;
-      grid-template-columns: 1fr 220px 42px;
-      gap:10px;
-      align-items:center;
-      padding:10px 0;
-      border-bottom:1px solid #f3f4f6;
-    }
-    .othersUniRow:last-child{ border-bottom:none; }
-
-    .iconBtn{
-      width:42px;
-      height:42px;
-      border-radius:12px;
-      background:#374151;
-      color:#fff;
-      font-weight:900;
-    }
-
-    /* ✅ TOAST */
-    .toast{
-      position:fixed;
-      left:50%;
-      bottom:18px;
-      transform:translateX(-50%);
-      padding:12px 14px;
-      border-radius:12px;
-      box-shadow:0 8px 24px rgba(0,0,0,.15);
-      z-index:9999;
-      max-width:92vw;
-      text-align:center;
-      font-size:14px;
-      font-family:Arial,sans-serif;
-      color:#fff;
-      opacity:0;
-      pointer-events:none;
-      transition:opacity .18s ease, transform .18s ease;
-    }
-    .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
-    .toast.ok{ background:#16a34a; }
-    .toast.err{ background:#dc2626; }
-
-    @media (max-width: 720px){
-      .wrap{ padding:12px 10px 110px; }
-      .item{ grid-template-columns: 1fr; }
-      .col{ min-width:160px; }
-      .menuGrid{ grid-template-columns: 1fr; }
-      .othersUniRow{ grid-template-columns: 1fr; }
-      .othersUniRow .iconBtn{ width:100%; height:42px; }
-    }
-  </style>
-</head>
-
-<body>
-<div class="wrap">
-
-  <!-- LOGIN -->
-  <div id="loginCard" class="card">
-    <h2>Login do Gestor</h2>
-    <div class="muted">Informe seu <b>PIN (4 dígitos)</b> (aba Gestores).</div>
-
-    <div class="row" style="margin-top:10px;">
-      <div class="col">
-        <input id="pin" placeholder="PIN" inputmode="numeric" maxlength="4" autocomplete="off">
-      </div>
-      <div class="col">
-        <button id="btnLogin" onclick="login()">Entrar</button>
-      </div>
-    </div>
-
-    <div id="loginStatus" class="muted" style="margin-top:8px;"></div>
-  </div>
-
-  <!-- APP -->
-  <div id="app" style="display:none;">
-
-    <!-- HEADER -->
-    <div class="card">
-      <div class="topbar">
-        <div>
-          <h3 style="margin:0;">Portal do Gestor</h3>
-          <div id="topInfo" class="muted" style="margin-top:4px;"></div>
-          <div id="dataInfo" class="muted"></div>
-        </div>
-        <button class="logoutBtn" onclick="logout()">Logout</button>
-      </div>
-    </div>
-
-    <!-- MENU -->
-    <div id="screenMenu" class="card">
-      <h3>Escolha uma opção</h3>
-      <div class="muted">Selecione o que deseja registrar.</div>
-
-      <div class="menuGrid">
-        <button class="menuBtn" onclick="goUniformes()">
-          👕 Uniformes
-          <span class="small">Registre tamanhos por colaborador e gere PDF.</span>
-        </button>
-
-        <button class="menuBtn secondary" onclick="goMateriais()">
-          🧰 Materiais
-          <span class="small">Solicite materiais com quantidade e envie para a planilha.</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- UNIFORMES -->
-    <div id="screenUniformes" class="card" style="display:none;">
-      <div class="row" style="align-items:center;">
-        <div class="col"><h3>Uniformes</h3><div class="muted">Defina o tamanho por colaborador.</div></div>
-        <div class="col" style="max-width:220px;">
-          <button class="secondary" onclick="goMenu()">⬅️ Voltar</button>
-        </div>
-      </div>
-
-      <div class="list" id="listaUniformes"></div>
-
-      <h3 style="margin-top:14px;">Outros (por tamanho)</h3>
-      <div class="muted">Preencha o item e selecione o tamanho (ex: “Jaqueta”, “Boné”, etc.). Deixe em branco se não usar.</div>
-      <div class="list" id="listaOutrosUniformes"></div>
-
-      <div class="pdfArea" id="pdfArea"></div>
-      <div id="saveStatusUniformes" class="muted" style="margin-top:8px;"></div>
-    </div>
-
-    <!-- MATERIAIS -->
-    <div id="screenMateriais" class="card" style="display:none;">
-      <div class="row" style="align-items:center;">
-        <div class="col"><h3>Materiais</h3><div class="muted">Informe a quantidade para cada material (0 = não solicitar).</div></div>
-        <div class="col" style="max-width:220px;">
-          <button class="secondary" onclick="goMenu()">⬅️ Voltar</button>
-        </div>
-      </div>
-
-      <div id="listaMateriais" class="list"></div>
-
-      <h3 style="margin-top:14px;">Outros (até 5)</h3>
-      <div class="muted">Preencha o nome do material e a quantidade. Deixe em branco se não usar.</div>
-      <div id="listaOutros" class="list"></div>
-
-      <div id="saveStatusMateriais" class="muted" style="margin-top:8px;"></div>
-    </div>
-
-  </div>
-</div>
-
-<div class="bottomBar" id="bottomBar" style="display:none;">
-  <div class="inner" id="bottomActions"></div>
-</div>
-
-<!-- ✅ TOAST CONTAINER -->
-<div id="toast" class="toast" aria-live="polite"></div>
-
-<script>
-/**
- * ✅ Coloque aqui a URL do seu Worker publicado:
- * Ex: https://tamanhos-proxy.grao1000.workers.dev
- */
-const API_BASE = "https://uniformes-e-materiais.tecnologia-f0c.workers.dev/";
-
-let token = localStorage.getItem("TAM_TOKEN") || "";
-let ctx = null;
-
-// uniformes
-let formUniformes = {};
-// ✅ OUTROS UNIFORMES: 1 campo por tamanho (nome preenchível)
-let formOutrosUniformes = {}; // { "P": {nome:""}, ... }
-
-// materiais
-const MATERIAIS_FIXOS = [
-  "balança",
-  "impressora de laudo",
-  "calador",
-  "kit peneiras",
-  "quarteador",
-  "micropipeta",
-  "alicate de corte" // ✅ NOVO
-];
-let formMateriais = {};     // { "balança": 1, ... }
-let formOutros = [          // 5 itens
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 }
-];
-
-function onlyDigits(s){ return String(s||"").replace(/\D/g,""); }
-function esc(s){ return String(s||"").replace(/[&<>"]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
-
-function show(id){ document.getElementById(id).style.display="block"; }
-function hide(id){ document.getElementById(id).style.display="none"; }
-
-function setBusy(v){
-  const b = !!v;
-  ["btnLogin"].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.disabled = b;
-  });
-
-  // desabilita botões do bottomBar
-  const btns = document.querySelectorAll("#bottomActions button");
-  btns.forEach(x => x.disabled = b);
+/************ WEB APP ************/
+function doGet() {
+  return ContentService
+    .createTextOutput(JSON.stringify({ ok:true, service:"uniformes-e-materiais-webapp" }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
-function setBottomActions(html){
-  document.getElementById("bottomActions").innerHTML = html || "";
-}
-
-/** ✅ TOAST */
-let toastTimer = null;
-function showToast(msg, type){
-  const el = document.getElementById("toast");
-  if(!el) return;
-
-  el.className = "toast " + (type === "ok" ? "ok" : "err");
-  el.textContent = msg || "";
-  el.classList.add("show");
-
-  if(toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=> el.classList.remove("show"), 2600);
-}
-
-async function api(action, args){
-  const payload = { action, ...(args||{}) };
-  if(token && !payload.token && action !== "loginPIN"){
-    payload.token = token;
-  }
-
-  let txt = "";
+function doPost(e){
   try{
-    const res = await fetch(API_BASE, {
-      method:"POST",
-      headers:{ "Content-Type":"text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
-    });
-    txt = await res.text();
+    const raw = e?.postData?.contents || "";
+    const body = raw ? JSON.parse(raw) : {};
+    const action = String(body.action || "").trim();
+    if(!action) return json_({ ok:false, error:"Ação inválida: ''" });
+
+    if(action === "loginPIN") return json_(loginPIN(body.pin));
+    if(action === "ping") return json_(ping(body.token));
+
+    if(action === "carregarListaRecente") return json_(carregarListaRecente(body.token));
+
+    if(action === "salvarTamanhos") return json_(salvarTamanhos(body.token, body.payload));
+    if(action === "gerarPDFTamanhos") return json_(gerarPDFTamanhos(body.token, body.dataRef));
+
+    if(action === "salvarMateriais") return json_(salvarMateriais(body.token, body.payload));
+
+    return json_({ ok:false, error:`Ação inválida: '${action}'` });
+  }catch(err){
+    return json_({ ok:false, error:String(err?.message || err) });
+  }
+}
+
+function json_(obj){
+  return ContentService
+    .createTextOutput(JSON.stringify(obj || {}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/************ HELPERS ************/
+function responder_(ok, extra){ return Object.assign({ ok:!!ok }, extra||{}); }
+
+function norm_(s) {
+  return String(s || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
+function limparDigitos_(s){ return String(s||"").replace(/\D/g,""); }
+
+function formatDateDMY_(d) {
+  const tz = Session.getScriptTimeZone();
+  return Utilities.formatDate(d, tz, "dd/MM/yyyy");
+}
+
+function parseDateDMY_(s) {
+  const m = String(s || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const dd = Number(m[1]), mm = Number(m[2]), yy = Number(m[3]);
+  const d = new Date(yy, mm - 1, dd);
+  if (d.getFullYear() !== yy || d.getMonth() !== (mm - 1) || d.getDate() !== dd) return null;
+  return d;
+}
+
+function cellToDMY_(v) {
+  if (v instanceof Date) return formatDateDMY_(v);
+  if (typeof v === "number") {
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    return formatDateDMY_(d);
+  }
+  const s = String(v || "").trim();
+  const d = parseDateDMY_(s);
+  return d ? formatDateDMY_(d) : s;
+}
+
+function mapHeaders_(headerRow) {
+  const map = {};
+  headerRow.forEach((h, i) => {
+    const k = String(h || "").trim();
+    if (k) map[k] = i + 1;
+  });
+  return map;
+}
+
+/************ SESSÃO / TOKEN ************/
+function makeToken_(){ return Utilities.getUuid().replace(/-/g,""); }
+function cache_(){ return CacheService.getScriptCache(); }
+
+function setSession_(token, obj){ cache_().put(`TAM_SESS_${token}`, JSON.stringify(obj), 6*60*60); }
+function getSession_(token){
+  const raw = cache_().get(`TAM_SESS_${token}`);
+  if(!raw) return null;
+  try{ return JSON.parse(raw); }catch(_){ return null; }
+}
+function requireSession_(token){
+  const s = getSession_(token);
+  if(!s) throw new Error("Sessão expirada. Faça login novamente.");
+  return s;
+}
+
+function ping(token){
+  try{ requireSession_(token); return { ok:true }; }
+  catch(e){ return { ok:false, error:String(e.message||e) }; }
+}
+
+/************ GESTORES ************/
+function getGestoresSheet_(){
+  const ss = SpreadsheetApp.openById(DESPESAS_SPREADSHEET_ID);
+  const sh = ss.getSheetByName(ABA_GESTORES);
+  if(!sh) throw new Error(`Aba "${ABA_GESTORES}" não encontrada.`);
+  return sh;
+}
+
+function loginPIN(pinRaw){
+  try{
+    const pin = limparDigitos_(pinRaw).slice(0,4);
+    if(!pin || pin.length < 4) return responder_(false, { error:"Informe o PIN (4 dígitos)." });
+
+    const sh = getGestoresSheet_();
+    const values = sh.getDataRange().getValues();
+    if(values.length < 2) return responder_(false, { error:"Aba Gestores está vazia." });
+
+    const headers = values[0].map(v => String(v||"").trim());
+    const hm = mapHeaders_(headers);
+
+    if(!hm["PIN"]) return responder_(false, { error:"Coluna PIN não encontrada na aba Gestores." });
+    if(!hm["Coordenação"]) return responder_(false, { error:"Coluna Coordenação não encontrada na aba Gestores." });
+
+    const cPIN  = hm["PIN"] - 1;
+    const cNome = hm["Nome"] ? (hm["Nome"] - 1) : null;
+    const cCoord= hm["Coordenação"] - 1;
+    const cSup  = hm["Supervisão"] ? (hm["Supervisão"] - 1) : null;
+    const cSit  = hm["Situação"] ? (hm["Situação"] - 1) : null;
+
+    let found = null;
+    for(let i=1;i<values.length;i++){
+      const r = values[i];
+      const p = limparDigitos_(r[cPIN]);
+      if(p === pin){
+        const sit = cSit!=null ? String(r[cSit]||"").trim() : "";
+        if(sit && norm_(sit) !== "ATIVO") return responder_(false, { error:"Gestor não está ativo na aba Gestores." });
+
+        found = {
+          nome: cNome!=null ? String(r[cNome]||"").trim() : "GESTOR",
+          coordenacao: String(r[cCoord]||"").trim(),
+          supervisao: cSup!=null ? String(r[cSup]||"").trim() : ""
+        };
+        break;
+      }
+    }
+
+    if(!found) return responder_(false, { error:"PIN não encontrado na aba Gestores." });
+    if(!found.coordenacao) return responder_(false, { error:"Gestor sem Coordenação preenchida." });
+
+    const token = makeToken_();
+    setSession_(token, { type:"GESTOR", nome: found.nome, coordenacao: found.coordenacao, supervisao: found.supervisao||"" });
+    return responder_(true, { token });
+
   }catch(e){
-    return { ok:false, error:"Falha de rede / CORS", raw:String(e) };
+    return responder_(false, { error:String(e.message||e) });
   }
-
-  try{ return JSON.parse(txt); }
-  catch(e){ return { ok:false, error:"Resposta inválida do servidor", raw:txt }; }
 }
 
-function logout(){
-  localStorage.removeItem("TAM_TOKEN");
-  token = "";
-  ctx = null;
-  formUniformes = {};
-  formOutrosUniformes = {};
-  formMateriais = {};
-  formOutros = [
-    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
-  ];
-
-  document.getElementById("loginStatus").innerText = "Faça login novamente.";
-  hide("app"); hide("bottomBar"); show("loginCard");
-}
-
-async function login(){
-  const pin = onlyDigits(document.getElementById("pin").value).slice(0,4);
-  if(pin.length < 4){
-    document.getElementById("loginStatus").innerText = "Informe 4 dígitos.";
-    return;
-  }
-
-  setBusy(true);
-  document.getElementById("loginStatus").innerText = "Entrando...";
-
-  const out = await api("loginPIN", { pin });
-  setBusy(false);
-
-  if(!out || !out.ok){
-    document.getElementById("loginStatus").innerText = out?.error || "Erro";
-    showToast(out?.error || "Falha no login.", "err");
-    return;
-  }
-
-  token = out.token;
-  localStorage.setItem("TAM_TOKEN", token);
-
-  hide("loginCard");
-  show("app");
-  show("bottomBar");
-  document.getElementById("loginStatus").innerText = "";
-
-  showToast("✅ Login realizado com sucesso!", "ok");
-  await bootstrap();
-}
-
-async function bootstrap(){
-  setBusy(true);
-  const res = await api("carregarListaRecente", {});
-  setBusy(false);
-
-  if(!res || !res.ok){
-    showToast(res?.error || "Erro ao carregar dados do gestor.", "err");
-    alert(res?.error || "Erro ao carregar dados do gestor.");
-    logout();
-    return;
-  }
-
-  ctx = res;
-  const g = res.gestor || {};
-
-  document.getElementById("topInfo").innerText =
-    `Gestor: ${g.nome||"GESTOR"} | Coordenação: ${g.coordenacao||"-"} | Supervisão: ${g.supervisao||"(todas)"}`;
-
-  document.getElementById("dataInfo").innerHTML =
-    `<span class="pill">Data mais recente do histórico: <b>${esc(res.dataRef||"")}</b></span>`;
-
-  const cols = Array.isArray(res.colaboradores) ? res.colaboradores : [];
-  const tamanhos = Array.isArray(res.tamanhos) ? res.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
-
-  // uniformes default
-  formUniformes = {};
-  cols.forEach(c=>{
-    formUniformes[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || g.supervisao || "" };
+/************ HISTÓRICO – pegar data mais recente ************/
+function getUltimaAbaData_(ss){
+  const sheets = ss.getSheets().map(s => s.getName());
+  let best = null; // {name, date}
+  sheets.forEach(name=>{
+    const d = parseDateDMY_(name);
+    if(!d) return;
+    if(!best || d.getTime() > best.date.getTime()){
+      best = { name, date: d };
+    }
   });
-
-  // ✅ outros uniformes: 1 campo por tamanho
-  formOutrosUniformes = {};
-  tamanhos.forEach(t => formOutrosUniformes[String(t).toUpperCase()] = { nome:"" });
-
-  // materiais default
-  formMateriais = {};
-  MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
-
-  goMenu();
+  return best; // pode ser null
 }
 
-/** navegação */
-function goMenu(){
-  show("screenMenu");
-  hide("screenUniformes");
-  hide("screenMateriais");
+function carregarAtivosPorData_(dataRef){
+  const ss = SpreadsheetApp.openById(COLAB_ATIVOS_SPREADSHEET_ID);
+  const sh = ss.getSheetByName(dataRef);
+  if(!sh) throw new Error(`Aba "${dataRef}" não encontrada no histórico.`);
 
-  setBottomActions(`<button class="secondary" onclick="bootstrap()">Recarregar</button>`);
-}
+  const values = sh.getDataRange().getValues();
+  if(values.length < 2) return [];
 
-function goUniformes(){
-  hide("screenMenu");
-  show("screenUniformes");
-  hide("screenMateriais");
+  const headers = values[0].map(h => String(h||"").trim());
+  const hm = mapHeaders_(headers);
 
-  renderUniformes();
+  const colNome = (hm["Nome"] || hm["NOME"] || hm["Funcionário"] || hm["FUNCIONÁRIO"] || hm["Funcionario"] || hm["FUNCIONARIO"] || hm["Colaborador"] || hm["COLABORADOR"]);
+  const colCoord = (hm["Coordenação"] || hm["COORDENAÇÃO"] || hm["Coordenacao"] || hm["COORDENACAO"]);
+  const colSup = (hm["Supervisão"] || hm["SUPERVISÃO"] || hm["Supervisao"] || hm["SUPERVISAO"]);
+  const colSit = (hm["Situação"] || hm["SITUAÇÃO"] || hm["Situacao"] || hm["SITUACAO"]);
 
-  setBottomActions(`
-    <button class="secondary" onclick="bootstrap()">Recarregar</button>
-    <button onclick="salvarUniformes()">Salvar e Gerar PDF</button>
-  `);
-}
+  if(!colNome) throw new Error("Não achei a coluna Nome/Colaborador no histórico.");
+  if(!colCoord) throw new Error("Não achei a coluna Coordenação no histórico.");
 
-function goMateriais(){
-  hide("screenMenu");
-  hide("screenUniformes");
-  show("screenMateriais");
+  const out = [];
+  for(let i=1;i<values.length;i++){
+    const r = values[i];
+    const nome = String(r[colNome-1]||"").trim();
+    if(!nome) continue;
 
-  renderMateriais();
+    if(colSit){
+      const st = String(r[colSit-1]||"").trim();
+      if(st && norm_(st) !== "ATIVO") continue;
+    }
 
-  setBottomActions(`
-    <button class="secondary" onclick="bootstrap()">Recarregar</button>
-    <button onclick="salvarMateriais()">Enviar Solicitação</button>
-  `);
-}
-
-/** UNIFORMES */
-function renderUniformes(){
-  const cols = Array.isArray(ctx?.colaboradores) ? ctx.colaboradores : [];
-  const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
-
-  document.getElementById("pdfArea").innerHTML = "";
-  document.getElementById("saveStatusUniformes").innerText = "";
-
-  if(!cols.length){
-    document.getElementById("listaUniformes").innerHTML = `<div class="muted">Nenhum colaborador encontrado para este gestor.</div>`;
-  }else{
-    const html = cols.map(c=>{
-      const nome = c.colaborador;
-      const sup = c.supervisao || "";
-      const val = (formUniformes[nome]?.tamanho || "M").toUpperCase();
-
-      return `
-        <div class="item">
-          <div>
-            <div class="nm">${esc(nome)}</div>
-            <div class="sub">Supervisão: ${esc(sup || "SEM SUPERVISÃO")}</div>
-          </div>
-          <select onchange="onUniformSizeChange('${encodeURIComponent(nome)}', this.value)">
-            ${tamanhos.map(t=>`<option ${String(t).toUpperCase()===val?"selected":""}>${esc(String(t).toUpperCase())}</option>`).join("")}
-          </select>
-        </div>
-      `;
-    }).join("");
-    document.getElementById("listaUniformes").innerHTML = html;
-  }
-
-  // ✅ OUTROS POR TAMANHO
-  const outrosHtml = tamanhos.map((t)=>{
-    const T = String(t).toUpperCase();
-    const nome = String(formOutrosUniformes?.[T]?.nome || "");
-    return `
-      <div class="othersUniRow">
-        <input value="${esc(nome)}" placeholder="OUTROS – item para tamanho ${esc(T)}"
-               oninput="onOutroUniformeNomeChange('${encodeURIComponent(T)}', this.value)">
-        <select disabled>
-          <option selected>${esc(T)}</option>
-        </select>
-        <button class="iconBtn" onclick="limparOutroUniforme('${encodeURIComponent(T)}')" title="Limpar">✕</button>
-      </div>
-    `;
-  }).join("");
-
-  document.getElementById("listaOutrosUniformes").innerHTML = outrosHtml;
-}
-
-function onUniformSizeChange(encNome, val){
-  const nome = decodeURIComponent(encNome);
-  if(!formUniformes[nome]) formUniformes[nome] = {};
-  formUniformes[nome].tamanho = String(val||"M").toUpperCase();
-}
-
-function onOutroUniformeNomeChange(encT, v){
-  const t = decodeURIComponent(encT);
-  if(!formOutrosUniformes[t]) formOutrosUniformes[t] = { nome:"" };
-  formOutrosUniformes[t].nome = String(v || "").trim();
-}
-function limparOutroUniforme(encT){
-  const t = decodeURIComponent(encT);
-  if(!formOutrosUniformes[t]) formOutrosUniformes[t] = { nome:"" };
-  formOutrosUniformes[t].nome = "";
-  renderUniformes();
-}
-
-function b64ToBlob(b64, mime){
-  const bin = atob(b64);
-  const len = bin.length;
-  const bytes = new Uint8Array(len);
-  for(let i=0;i<len;i++) bytes[i] = bin.charCodeAt(i);
-  return new Blob([bytes], { type: mime || "application/pdf" });
-}
-
-async function salvarUniformes(){
-  if(!ctx) return;
-
-  const dataRef = ctx.dataRef;
-  const cols = Array.isArray(ctx.colaboradores) ? ctx.colaboradores : [];
-  const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
-
-  if(!cols.length){
-    showToast("Nenhum colaborador na lista.", "err");
-    alert("Nenhum colaborador na lista.");
-    return;
-  }
-
-  // base (colaboradores)
-  const itens = cols.map(c=>{
-    const nome = c.colaborador;
-    return {
+    out.push({
       colaborador: nome,
-      supervisao: c.supervisao || "",
-      tamanho: (formUniformes[nome]?.tamanho || "M").toUpperCase()
-    };
-  });
+      coordenacao: String(r[colCoord-1]||"").trim(),
+      supervisao: colSup ? String(r[colSup-1]||"").trim() : ""
+    });
+  }
+  return out;
+}
 
-  // ✅ adiciona OUTROS (1 por tamanho) como linhas especiais
-  tamanhos.forEach(t=>{
-    const T = String(t).toUpperCase();
-    const nomeItem = String(formOutrosUniformes?.[T]?.nome || "").trim();
-    if(nomeItem){
-      itens.push({
-        colaborador: `OUTROS - ${nomeItem}`,
-        supervisao: (ctx?.gestor?.supervisao || ""),
-        tamanho: T
-      });
+/************ API – carregar lista da data mais recente ************/
+function carregarListaRecente(token){
+  try{
+    const sess = requireSession_(token);
+
+    const ssHist = SpreadsheetApp.openById(COLAB_ATIVOS_SPREADSHEET_ID);
+    const ultima = getUltimaAbaData_(ssHist);
+    if(!ultima) throw new Error("Não encontrei nenhuma aba dd/MM/yyyy no histórico.");
+
+    const dataRef = ultima.name;
+    const all = carregarAtivosPorData_(dataRef);
+
+    const coordAlvo = String(sess.coordenacao||"").trim();
+    const supAlvo   = String(sess.supervisao||"").trim();
+
+    const filtrados = all.filter(x=>{
+      if(norm_(x.coordenacao) !== norm_(coordAlvo)) return false;
+      if(supAlvo && norm_(String(x.supervisao||"")) !== norm_(supAlvo)) return false;
+      return true;
+    });
+
+    filtrados.sort((a,b)=> norm_(a.colaborador).localeCompare(norm_(b.colaborador)));
+
+    return responder_(true, {
+      dataRef,
+      gestor: { nome: sess.nome, coordenacao: sess.coordenacao, supervisao: sess.supervisao||"" },
+      colaboradores: filtrados,
+      tamanhos: TAMANHOS
+    });
+
+  }catch(e){
+    return responder_(false, { error:String(e.message||e) });
+  }
+}
+
+/************ DESTINO – garantir abas/cabeçalhos ************/
+function ensureSheet_(ss, name, headers){
+  let sh = ss.getSheetByName(name);
+  if(!sh) sh = ss.insertSheet(name);
+
+  const need = headers.length;
+  const lastCol = Math.max(sh.getLastColumn(), need);
+  const cur = sh.getRange(1,1,1,lastCol).getValues()[0].map(v=>String(v||"").trim());
+
+  const ok = cur.slice(0,need).join("|") === headers.join("|");
+  if(!ok){
+    sh.getRange(1,1,1,need).setValues([headers]);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function deleteRowsByFilter_(sh, predicateFn){
+  const lastRow = sh.getLastRow();
+  const lastCol = sh.getLastColumn();
+  if(lastRow < 2) return 0;
+
+  const values = sh.getRange(2,1,lastRow-1,lastCol).getValues();
+  const toDelete = [];
+  for(let i=0;i<values.length;i++){
+    if(predicateFn(values[i])) toDelete.push(i+2);
+  }
+  toDelete.sort((a,b)=>b-a).forEach(r=>sh.deleteRow(r));
+  return toDelete.length;
+}
+
+/************ UNIFORMES – SALVAR ************/
+function salvarTamanhos(token, payload){
+  try{
+    const sess = requireSession_(token);
+
+    const dataRef = String(payload?.dataRef || "").trim();
+    if(!parseDateDMY_(dataRef)) throw new Error("dataRef inválida (dd/MM/aaaa).");
+
+    const itens = Array.isArray(payload?.itens) ? payload.itens : [];
+    if(!itens.length) throw new Error("Nenhum item para salvar.");
+
+    // OUTROS: { "P": 2, "M": 1, ... }
+    const outros = payload?.outros || {};
+
+    // valida tamanhos (itens)
+    itens.forEach(it=>{
+      const t = String(it?.tamanho||"").trim().toUpperCase();
+      if(!TAMANHOS.includes(t)) throw new Error(`Tamanho inválido: ${t}`);
+    });
+
+    // valida tamanhos (outros)
+    Object.keys(outros || {}).forEach(t=>{
+      const T = String(t||"").trim().toUpperCase();
+      if(!TAMANHOS.includes(T)) throw new Error(`Tamanho inválido em OUTROS: ${T}`);
+      const qtd = Number(outros[t] || 0) || 0;
+      if(qtd < 0) throw new Error(`Quantidade inválida em OUTROS (${T}).`);
+    });
+
+    const coord = String(sess.coordenacao||"").trim();
+    const supSess = String(sess.supervisao||"").trim();
+
+    const ss = SpreadsheetApp.openById(DEST_SPREADSHEET_ID);
+    const shColab = ensureSheet_(ss, DEST_ABA_COLAB, ["Data","Coordenação","Supervisão","Colaborador","Tamanho"]);
+    const shSup   = ensureSheet_(ss, DEST_ABA_SUP,   ["Data","Coordenação","Supervisão","Quantidade","Tamanho"]);
+
+    // remove lançamentos anteriores desse gestor/data (para permitir reenvio)
+    deleteRowsByFilter_(shColab, (r)=>{
+      const d = String(cellToDMY_(r[0])||"").trim();
+      const c = String(r[1]||"").trim();
+      const s = String(r[2]||"").trim();
+      if(d !== dataRef) return false;
+      if(norm_(c) !== norm_(coord)) return false;
+      if(supSess && norm_(s) !== norm_(supSess)) return false;
+      return true;
+    });
+
+    deleteRowsByFilter_(shSup, (r)=>{
+      const d = String(cellToDMY_(r[0])||"").trim();
+      const c = String(r[1]||"").trim();
+      const s = String(r[2]||"").trim();
+      if(d !== dataRef) return false;
+      if(norm_(c) !== norm_(coord)) return false;
+      if(supSess && norm_(s) !== norm_(supSess)) return false;
+      return true;
+    });
+
+    // grava Colaboradores
+    const rowsColab = itens.map(it=> ([
+      dataRef,
+      coord,
+      String(it.supervisao||"").trim() || supSess || "",
+      String(it.colaborador||"").trim(),
+      String(it.tamanho||"").trim().toUpperCase()
+    ]));
+
+    shColab.getRange(shColab.getLastRow()+1, 1, rowsColab.length, 5).setValues(rowsColab);
+
+    // agrega Supervisão x Tamanho (quantidade = count * 2)
+    const agg = new Map(); // key = sup|tam => count
+
+    rowsColab.forEach(r=>{
+      const sup = String(r[2]||"").trim() || "SEM SUPERVISÃO";
+      const tam = String(r[4]||"").trim().toUpperCase();
+      const key = `${norm_(sup)}|${tam}`;
+      agg.set(key, (agg.get(key)||0) + 1);
+    });
+
+    // ✅ soma OUTROS no resumo (considera quantidade de pessoas por tamanho)
+    Object.keys(outros || {}).forEach(tam=>{
+      const qtd = Number(outros[tam] || 0) || 0;
+      if(qtd <= 0) return;
+
+      const sup = (supSess || "SEM SUPERVISÃO");
+      const key = `${norm_(sup)}|${String(tam).toUpperCase()}`;
+      agg.set(key, (agg.get(key)||0) + qtd);
+    });
+
+    const rowsSup = [];
+    agg.forEach((count, key)=>{
+      const parts = key.split("|");
+      const supNorm = parts[0];
+      const tam = parts[1];
+
+      let supPretty = "";
+      for(const r of rowsColab){
+        const s = String(r[2]||"").trim() || "SEM SUPERVISÃO";
+        if(norm_(s) === supNorm){ supPretty = s; break; }
+      }
+      if(!supPretty){
+        // se veio só de OUTROS
+        supPretty = (supSess || "SEM SUPERVISÃO");
+      }
+
+      rowsSup.push([ dataRef, coord, supPretty, Number(count)*2, tam ]);
+    });
+
+    rowsSup.sort((a,b)=>{
+      const s = norm_(a[2]).localeCompare(norm_(b[2]));
+      if(s !== 0) return s;
+      return String(a[4]).localeCompare(String(b[4]));
+    });
+
+    if(rowsSup.length){
+      shSup.getRange(shSup.getLastRow()+1, 1, rowsSup.length, 5).setValues(rowsSup);
     }
-  });
 
-  setBusy(true);
-  document.getElementById("saveStatusUniformes").innerText = "Salvando e gerando PDF...";
-  document.getElementById("pdfArea").innerHTML = "";
+    const pdf = gerarPDFTamanhos_(sess, dataRef, rowsColab, rowsSup);
 
-  const res = await api("salvarTamanhos", { payload: { dataRef, itens } });
-  setBusy(false);
+    return responder_(true, {
+      saved_colaboradores: rowsColab.length,
+      saved_supervisao: rowsSup.length,
+      message: "Uniformes enviados com sucesso!",
+      pdf
+    });
 
-  if(!res || !res.ok){
-    const msg = res?.error || "Erro ao salvar";
-    document.getElementById("saveStatusUniformes").innerText = msg;
-    showToast("❌ " + msg, "err");
-    return;
-  }
-
-  document.getElementById("saveStatusUniformes").innerText =
-    `✅ Salvo! Colaboradores: ${res.saved_colaboradores} | Resumos: ${res.saved_supervisao}`;
-
-  showToast(res.message || `✅ Uniformes enviados com sucesso! (${res.saved_colaboradores || 0} registros)`, "ok");
-
-  const pdf = res.pdf || {};
-  if(pdf.b64){
-    const blob = b64ToBlob(pdf.b64, "application/pdf");
-    const url = URL.createObjectURL(blob);
-
-    document.getElementById("pdfArea").innerHTML = `
-      <a href="${url}" download="${esc(pdf.fileName||"Relacao_Tamanhos.pdf")}">⬇️ Baixar PDF</a>
-      <div class="muted">Se o link não baixar automaticamente, clique novamente.</div>
-    `;
-  }else{
-    document.getElementById("pdfArea").innerHTML = `<div class="muted">PDF não retornou.</div>`;
+  }catch(e){
+    return responder_(false, { error:String(e.message||e) });
   }
 }
 
-/** MATERIAIS */
-function renderMateriais(){
-  document.getElementById("saveStatusMateriais").innerText = "";
+/************ MATERIAIS – SALVAR ************/
+function salvarMateriais(token, payload){
+  try{
+    const sess = requireSession_(token);
 
-  const fixosHtml = MATERIAIS_FIXOS.map(m=>{
-    const qtd = Number(formMateriais[m] || 0);
-    return `
-      <div class="qtyRow">
-        <div class="matName">${esc(m)}</div>
-        <input type="number" min="0" step="1" value="${qtd}"
-               oninput="onMaterialQtyChange('${encodeURIComponent(m)}', this.value)"
-               placeholder="Qtd">
+    const dataRef = String(payload?.dataRef || "").trim();
+    if(!parseDateDMY_(dataRef)) throw new Error("dataRef inválida (dd/MM/aaaa).");
+
+    const itens = Array.isArray(payload?.itens) ? payload.itens : [];
+    if(!itens.length) throw new Error("Nenhum material informado.");
+
+    const gestorNome = String(sess?.nome || "GESTOR").trim();
+    const coord = String(sess?.coordenacao || "").trim();
+    const supSess = String(sess?.supervisao || "").trim();
+
+    if(!coord) throw new Error("Gestor sem Coordenação.");
+
+    // valida
+    const normItems = [];
+    itens.forEach(it=>{
+      const mat = String(it?.material||"").trim();
+      const un = Number(it?.un || 0) || 0;
+      if(!mat) return;
+      if(un <= 0) return;
+      normItems.push({ material: mat, un: Math.floor(un) });
+    });
+
+    if(!normItems.length) throw new Error("Nenhum material com quantidade > 0.");
+
+    const ss = SpreadsheetApp.openById(DEST_SPREADSHEET_ID);
+    const sh = ensureSheet_(ss, DEST_ABA_MAT, ["Data","Coordenação","Supervisão","Un","Material","Solicitado por"]);
+
+    // remove lançamentos anteriores desse gestor/data (para permitir reenvio)
+    deleteRowsByFilter_(sh, (r)=>{
+      const d = String(cellToDMY_(r[0])||"").trim();
+      const c = String(r[1]||"").trim();
+      const s = String(r[2]||"").trim();
+      const sol = String(r[5]||"").trim();
+
+      if(d !== dataRef) return false;
+      if(norm_(c) !== norm_(coord)) return false;
+      if(supSess && norm_(s) !== norm_(supSess)) return false;
+      if(norm_(sol) !== norm_(gestorNome)) return false;
+      return true;
+    });
+
+    const rows = normItems.map(it=> ([
+      dataRef,
+      coord,
+      supSess || "",
+      it.un,
+      it.material,
+      gestorNome
+    ]));
+
+    sh.getRange(sh.getLastRow()+1, 1, rows.length, 6).setValues(rows);
+
+    return responder_(true, {
+      saved: rows.length,
+      message: "Materiais enviados com sucesso!"
+    });
+
+  }catch(e){
+    return responder_(false, { error:String(e.message||e) });
+  }
+}
+
+/************ PDF (HTML -> Blob -> base64) ************/
+function esc_(s){
+  return String(s||"")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+
+function gerarPDFTamanhos(token, dataRefRaw){
+  try{
+    const sess = requireSession_(token);
+    const dataRef = String(dataRefRaw||"").trim();
+    if(!parseDateDMY_(dataRef)) throw new Error("dataRef inválida (dd/MM/aaaa).");
+
+    const ss = SpreadsheetApp.openById(DEST_SPREADSHEET_ID);
+    const shColab = ss.getSheetByName(DEST_ABA_COLAB);
+    const shSup   = ss.getSheetByName(DEST_ABA_SUP);
+    if(!shColab || !shSup) throw new Error("Abas de destino não encontradas.");
+
+    const coord = String(sess.coordenacao||"").trim();
+    const supSess = String(sess.supervisao||"").trim();
+
+    const col = shColab.getDataRange().getValues();
+    const sup = shSup.getDataRange().getValues();
+
+    const rowsColab = col.slice(1).filter(r=>{
+      const d = String(cellToDMY_(r[0])||"").trim();
+      const c = String(r[1]||"").trim();
+      const s = String(r[2]||"").trim();
+      if(d !== dataRef) return false;
+      if(norm_(c) !== norm_(coord)) return false;
+      if(supSess && norm_(s) !== norm_(supSess)) return false;
+      return true;
+    }).map(r=> [dataRef, coord, String(r[2]||""), String(r[3]||""), String(r[4]||"")] );
+
+    const rowsSup = sup.slice(1).filter(r=>{
+      const d = String(cellToDMY_(r[0])||"").trim();
+      const c = String(r[1]||"").trim();
+      const s = String(r[2]||"").trim();
+      if(d !== dataRef) return false;
+      if(norm_(c) !== norm_(coord)) return false;
+      if(supSess && norm_(s) !== norm_(supSess)) return false;
+      return true;
+    }).map(r=> [dataRef, coord, String(r[2]||""), Number(r[3]||0)||0, String(r[4]||"")] );
+
+    const pdf = gerarPDFTamanhos_(sess, dataRef, rowsColab, rowsSup);
+    return responder_(true, { pdf });
+
+  }catch(e){
+    return responder_(false, { error:String(e.message||e) });
+  }
+}
+
+function gerarPDFTamanhos_(sess, dataRef, rowsColab, rowsSup){
+  const gestor = String(sess?.nome||"GESTOR").trim();
+  const coord  = String(sess?.coordenacao||"").trim();
+  const supSess= String(sess?.supervisao||"").trim() || "SEM SUPERVISÃO";
+
+  const bodyColab = (rowsColab||[]).map((r,i)=>`
+    <tr class="${i%2? "alt":""}">
+      <td>${esc_(r[0])}</td>
+      <td>${esc_(r[1])}</td>
+      <td>${esc_(r[2]||"")}</td>
+      <td>${esc_(r[3]||"")}</td>
+      <td style="text-align:center;font-weight:700;">${esc_(r[4]||"")}</td>
+    </tr>
+  `).join("");
+
+  const bodySup = (rowsSup||[]).map((r,i)=>`
+    <tr class="${i%2? "alt":""}">
+      <td>${esc_(r[0])}</td>
+      <td>${esc_(r[1])}</td>
+      <td>${esc_(r[2]||"")}</td>
+      <td style="text-align:right;font-weight:700;">${esc_(r[3])}</td>
+      <td style="text-align:center;font-weight:700;">${esc_(r[4]||"")}</td>
+    </tr>
+  `).join("");
+
+  const html = `
+  <!doctype html>
+  <html>
+    <head>
+      <meta charset="utf-8"/>
+      <style>
+        @page { size: A4 portrait; margin: 12mm; }
+        body { font-family: Arial, sans-serif; color:#111; margin:0; }
+        .top{ font-size:12px; margin:0 0 10px 0; }
+        .top b{ color:#0b3d1a; }
+        h2{ margin:10px 0 6px; font-size:13px; }
+        table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+        th,td{ border:1px solid #000; padding:5px 6px; font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        thead th{ background:#166534; color:#fff; text-transform:uppercase; }
+        tbody tr.alt td{ background:#cfe6c3; }
+        .muted{ color:#444; font-size:10px; margin-top:6px; }
+      </style>
+    </head>
+    <body>
+      <div class="top">
+        <b>Relação de Tamanhos</b><br/>
+        Data: <b>${esc_(dataRef)}</b> | Coordenação: <b>${esc_(coord)}</b> | Supervisão: <b>${esc_(supSess)}</b><br/>
+        Gestor: <b>${esc_(gestor)}</b>
       </div>
-    `;
-  }).join("");
 
-  document.getElementById("listaMateriais").innerHTML = fixosHtml;
+      <h2>1) Colaboradores</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:14%;">Data</th>
+            <th style="width:26%;">Coordenação</th>
+            <th style="width:22%;">Supervisão</th>
+            <th style="width:28%;">Colaborador</th>
+            <th style="width:10%;">Tamanho</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${bodyColab || `<tr><td colspan="5">Nenhum registro.</td></tr>`}
+        </tbody>
+      </table>
 
-  const outrosHtml = formOutros.map((it, idx)=>{
-    return `
-      <div class="othersRow">
-        <input value="${esc(it.nome)}" placeholder="Nome do material (outros)"
-               oninput="onOutroNomeChange(${idx}, this.value)">
-        <input type="number" min="0" step="1" value="${Number(it.qtd||0)}"
-               oninput="onOutroQtdChange(${idx}, this.value)"
-               placeholder="Qtd">
-        <button class="iconBtn" onclick="limparOutro(${idx})" title="Limpar">✕</button>
-      </div>
-    `;
-  }).join("");
+      <h2>2) Resumo por Supervisão (Quantidade = pessoas × 2)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:14%;">Data</th>
+            <th style="width:30%;">Coordenação</th>
+            <th style="width:30%;">Supervisão</th>
+            <th style="width:16%;">Quantidade</th>
+            <th style="width:10%;">Tamanho</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${bodySup || `<tr><td colspan="5">Nenhum resumo.</td></tr>`}
+        </tbody>
+      </table>
 
-  document.getElementById("listaOutros").innerHTML = outrosHtml;
+      <div class="muted">Gerado em: ${esc_(Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss"))}</div>
+    </body>
+  </html>`;
+
+  const blob = HtmlService.createHtmlOutput(html).getBlob().getAs("application/pdf");
+  const fileName = `Tamanhos_${dataRef.replace(/\//g,"-")}_${(coord||"COORD").replace(/[^\w\s-]/g,"").trim()}_${(supSess||"SUP").replace(/[^\w\s-]/g,"").trim()}.pdf`;
+  const b64 = Utilities.base64Encode(blob.getBytes());
+
+  return { fileName, b64 };
 }
-
-function onMaterialQtyChange(encMat, v){
-  const mat = decodeURIComponent(encMat);
-  const n = Math.max(0, parseInt(v || "0", 10) || 0);
-  formMateriais[mat] = n;
-}
-
-function onOutroNomeChange(i, v){ formOutros[i].nome = String(v || "").trim(); }
-function onOutroQtdChange(i, v){ formOutros[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0); }
-function limparOutro(i){
-  formOutros[i] = { nome:"", qtd:0 };
-  renderMateriais();
-}
-
-async function salvarMateriais(){
-  if(!ctx) return;
-
-  const dataRef = ctx.dataRef || "";
-
-  const itens = [];
-
-  MATERIAIS_FIXOS.forEach(m=>{
-    const qtd = Number(formMateriais[m] || 0);
-    if(qtd > 0) itens.push({ material: m, un: qtd });
-  });
-
-  formOutros.forEach(o=>{
-    const nome = String(o.nome||"").trim();
-    const qtd = Number(o.qtd||0);
-    if(nome && qtd > 0) itens.push({ material: nome, un: qtd });
-  });
-
-  if(!itens.length){
-    const msg = "Informe pelo menos 1 material com quantidade maior que 0.";
-    document.getElementById("saveStatusMateriais").innerText = msg;
-    showToast("❌ " + msg, "err");
-    return;
-  }
-
-  setBusy(true);
-  document.getElementById("saveStatusMateriais").innerText = "Enviando solicitação...";
-  const res = await api("salvarMateriais", { payload: { dataRef, itens } });
-  setBusy(false);
-
-  if(!res || !res.ok){
-    const msg = res?.error || "Erro ao enviar";
-    document.getElementById("saveStatusMateriais").innerText = msg;
-    showToast("❌ " + msg, "err");
-    return;
-  }
-
-  const saved = Number(res.saved || 0);
-  document.getElementById("saveStatusMateriais").innerText = `✅ Solicitação enviada! Linhas gravadas: ${saved}`;
-  showToast(res.message || `✅ Materiais enviados com sucesso! (${saved} itens)`, "ok");
-
-  // reset
-  MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
-  formOutros = [
-    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
-  ];
-  renderMateriais();
-}
-
-window.onload = async ()=>{
-  const pin = document.getElementById("pin");
-  pin.addEventListener("input", ()=> pin.value = onlyDigits(pin.value).slice(0,4));
-  pin.addEventListener("keydown", (e)=>{ if(e.key==="Enter") login(); });
-
-  show("loginCard");
-  hide("app"); hide("bottomBar");
-
-  if(token){
-    const p = await api("ping", {});
-    if(p && p.ok){
-      hide("loginCard"); show("app"); show("bottomBar");
-      await bootstrap();
-    }else{
-      logout();
-    }
-  }
-};
-</script>
-</body>
-</html>
