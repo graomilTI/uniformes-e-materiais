@@ -251,8 +251,7 @@
 
 <script>
 /**
- * ✅ URL do Worker publicado
- * (mantenha com / no final)
+ * ✅ URL do Worker publicado (mantenha com / no final)
  */
 const API_BASE = "https://uniformes-e-materiais.tecnologia-f0c.workers.dev/";
 
@@ -261,9 +260,6 @@ let ctx = null;
 
 // uniformes (por colaborador)
 let formUniformes = {};
-
-// ✅ OUTROS uniformes: unidade por tamanho (OUTROS fixo)
-let formOutrosQtd = {}; // { "P": 0, "M": 0, ... }
 
 // materiais
 const MATERIAIS_FIXOS = [
@@ -283,6 +279,9 @@ let formOutros = [          // 5 itens
   { nome:"", qtd:0 },
   { nome:"", qtd:0 }
 ];
+
+// ✅ OUTROS uniformes: unidade por tamanho (OUTROS fixo)
+let formOutrosQtd = {}; // { "P": 0, "M": 0, ... }
 
 function onlyDigits(s){ return String(s||"").replace(/\D/g,""); }
 function esc(s){ return String(s||"").replace(/[&<>"]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
@@ -438,7 +437,7 @@ function goUniformes(){
   show("screenUniformes");
   hide("screenMateriais");
 
-  renderUniformes({ keepPdf:false });
+  renderUniformes();
 
   setBottomActions(`
     <button class="secondary" onclick="bootstrap()">Recarregar</button>
@@ -460,16 +459,11 @@ function goMateriais(){
 }
 
 /** UNIFORMES */
-function renderUniformes(opts){
-  opts = opts || {};
-  const keepPdf = !!opts.keepPdf;
-
+function renderUniformes(){
   const cols = Array.isArray(ctx?.colaboradores) ? ctx.colaboradores : [];
   const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
 
-  if(!keepPdf){
-    document.getElementById("pdfArea").innerHTML = "";
-  }
+  document.getElementById("pdfArea").innerHTML = "";
   document.getElementById("saveStatusUniformes").innerText = "";
 
   if(!cols.length){
@@ -496,7 +490,7 @@ function renderUniformes(opts){
     document.getElementById("listaUniformes").innerHTML = html;
   }
 
-  // OUTROS (unidade por tamanho)
+  // ✅ OUTROS (unidade por tamanho) — garantido
   const outrosHtml = tamanhos.map((t)=>{
     const T = String(t).toUpperCase();
     const qtd = Number(formOutrosQtd?.[T] || 0);
@@ -506,7 +500,7 @@ function renderUniformes(opts){
         <input value="OUTROS" disabled>
         <select disabled><option selected>${esc(T)}</option></select>
         <input type="number" min="0" step="1" value="${qtd}"
-               oninput="onOutroQtdChange('${encodeURIComponent(T)}', this.value)"
+               oninput="onOutroQtdChangeUniforme('${encodeURIComponent(T)}', this.value)"
                placeholder="Un">
       </div>
     `;
@@ -521,7 +515,8 @@ function onUniformSizeChange(encNome, val){
   formUniformes[nome].tamanho = String(val||"M").toUpperCase();
 }
 
-function onOutroQtdChange(encT, v){
+// ✅ separado para não conflitar com OUTROS materiais
+function onOutroQtdChangeUniforme(encT, v){
   const t = decodeURIComponent(encT);
   const n = Math.max(0, parseInt(v || "0", 10) || 0);
   formOutrosQtd[t] = n;
@@ -533,6 +528,16 @@ function b64ToBlob(b64, mime){
   const bytes = new Uint8Array(len);
   for(let i=0;i<len;i++) bytes[i] = bin.charCodeAt(i);
   return new Blob([bytes], { type: mime || "application/pdf" });
+}
+
+function autoDownloadBlob(url, filename){
+  // tenta baixar automaticamente (alguns browsers podem bloquear)
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || "Relacao_Tamanhos.pdf";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 async function salvarUniformes(){
@@ -566,7 +571,7 @@ async function salvarUniformes(){
 
   setBusy(true);
   document.getElementById("saveStatusUniformes").innerText = "Salvando e gerando PDF...";
-  // NÃO apaga o pdfArea aqui; renderUniformes decide.
+  document.getElementById("pdfArea").innerHTML = "";
 
   const res = await api("salvarTamanhos", { payload: { dataRef, itens, outros } });
   setBusy(false);
@@ -577,7 +582,7 @@ async function salvarUniformes(){
   }
 
   document.getElementById("saveStatusUniformes").innerText =
-    `✅ Salvo! Colaboradores: ${res.saved_colaboradores} | Resumos: ${res.saved_supervisao}`;
+    `✅ Salvo! Linhas gravadas: ${res.saved_colaboradores} | Supervisões: ${res.saved_supervisao}`;
 
   showToast(res.message || "Uniformes enviados com sucesso!");
 
@@ -585,28 +590,23 @@ async function salvarUniformes(){
   if(pdf.b64){
     const blob = b64ToBlob(pdf.b64, "application/pdf");
     const url = URL.createObjectURL(blob);
-    const fileName = pdf.fileName || "Relacao_Tamanhos.pdf";
+    const fileName = (pdf.fileName || "Relacao_Tamanhos.pdf");
 
-    // Link de fallback + id pro auto-download
+    // ✅ link visível
     document.getElementById("pdfArea").innerHTML = `
-      <a id="pdfDownloadLink" href="${url}" download="${esc(fileName)}">⬇️ Baixar PDF</a>
-      <div class="muted">Se não baixar automaticamente, clique no link acima.</div>
+      <a href="${url}" download="${esc(fileName)}">⬇️ Baixar PDF</a>
+      <div class="muted">Se não baixar automaticamente, clique no link.</div>
     `;
 
-    // ✅ baixa automaticamente
-    setTimeout(() => {
-      const a = document.getElementById("pdfDownloadLink");
-      if(a) a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
-    }, 120);
-
+    // ✅ download automático
+    autoDownloadBlob(url, fileName);
   }else{
     document.getElementById("pdfArea").innerHTML = `<div class="muted">PDF não retornou.</div>`;
   }
 
-  // zera OUTROS após salvar (e re-render sem apagar o PDF)
+  // zera OUTROS após salvar
   tamanhos.forEach(t => formOutrosQtd[String(t).toUpperCase()] = 0);
-  renderUniformes({ keepPdf:true });
+  renderUniformes();
 }
 
 /** MATERIAIS */
@@ -664,7 +664,6 @@ async function salvarMateriais(){
   if(!ctx) return;
 
   const dataRef = ctx.dataRef || "";
-
   const itens = [];
 
   MATERIAIS_FIXOS.forEach(m=>{
