@@ -100,6 +100,29 @@
       font-weight:900;
     }
 
+    /* ✅ TOAST */
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      padding:12px 14px;
+      border-radius:12px;
+      box-shadow:0 8px 24px rgba(0,0,0,.15);
+      z-index:9999;
+      max-width:92vw;
+      text-align:center;
+      font-size:14px;
+      font-family:Arial,sans-serif;
+      color:#fff;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease, transform .18s ease;
+    }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
+    .toast.ok{ background:#16a34a; }
+    .toast.err{ background:#dc2626; }
+
     @media (max-width: 720px){
       .wrap{ padding:12px 10px 110px; }
       .item{ grid-template-columns: 1fr; }
@@ -201,6 +224,9 @@
   <div class="inner" id="bottomActions"></div>
 </div>
 
+<!-- ✅ TOAST CONTAINER -->
+<div id="toast" class="toast" aria-live="polite"></div>
+
 <script>
 /**
  * ✅ Coloque aqui a URL do seu Worker publicado:
@@ -254,6 +280,22 @@ function setBottomActions(html){
   document.getElementById("bottomActions").innerHTML = html || "";
 }
 
+/** ✅ TOAST */
+let toastTimer = null;
+function showToast(msg, type){
+  const el = document.getElementById("toast");
+  if(!el) return;
+
+  el.className = "toast " + (type === "ok" ? "ok" : "err");
+  el.textContent = msg || "";
+  el.classList.add("show");
+
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{
+    el.classList.remove("show");
+  }, 2600);
+}
+
 async function api(action, args){
   const payload = { action, ...(args||{}) };
   if(token && !payload.token && action !== "loginPIN"){
@@ -305,6 +347,7 @@ async function login(){
 
   if(!out || !out.ok){
     document.getElementById("loginStatus").innerText = out?.error || "Erro";
+    showToast(out?.error || "Falha no login.", "err");
     return;
   }
 
@@ -316,6 +359,7 @@ async function login(){
   show("bottomBar");
   document.getElementById("loginStatus").innerText = "";
 
+  showToast("✅ Login realizado com sucesso!", "ok");
   await bootstrap();
 }
 
@@ -327,6 +371,7 @@ async function bootstrap(){
   setBusy(false);
 
   if(!res || !res.ok){
+    showToast(res?.error || "Erro ao carregar dados do gestor.", "err");
     alert(res?.error || "Erro ao carregar dados do gestor.");
     logout();
     return;
@@ -447,6 +492,7 @@ async function salvarUniformes(){
   const dataRef = ctx.dataRef;
   const cols = Array.isArray(ctx.colaboradores) ? ctx.colaboradores : [];
   if(!cols.length){
+    showToast("Nenhum colaborador na lista.", "err");
     alert("Nenhum colaborador na lista.");
     return;
   }
@@ -468,12 +514,18 @@ async function salvarUniformes(){
   setBusy(false);
 
   if(!res || !res.ok){
-    document.getElementById("saveStatusUniformes").innerText = res?.error || "Erro ao salvar";
+    const msg = res?.error || "Erro ao salvar";
+    document.getElementById("saveStatusUniformes").innerText = msg;
+    showToast("❌ " + msg, "err");
     return;
   }
 
   document.getElementById("saveStatusUniformes").innerText =
     `✅ Salvo! Colaboradores: ${res.saved_colaboradores} | Resumos: ${res.saved_supervisao}`;
+
+  // ✅ CONFIRMAÇÃO (TOAST)
+  const msgOk = res.message || `✅ Uniformes enviados com sucesso! (${res.saved_colaboradores || 0} registros)`;
+  showToast(msgOk, "ok");
 
   const pdf = res.pdf || {};
   if(pdf.b64){
@@ -545,7 +597,6 @@ function limparOutro(i){
 async function salvarMateriais(){
   if(!ctx) return;
 
-  const gestor = ctx.gestor || {};
   const dataRef = ctx.dataRef || "";
 
   // monta itens (fixos + outros)
@@ -567,15 +618,13 @@ async function salvarMateriais(){
   });
 
   if(!itens.length){
-    document.getElementById("saveStatusMateriais").innerText =
-      "Informe pelo menos 1 material com quantidade maior que 0.";
+    const msg = "Informe pelo menos 1 material com quantidade maior que 0.";
+    document.getElementById("saveStatusMateriais").innerText = msg;
+    showToast("❌ " + msg, "err");
     return;
   }
 
-  const payload = {
-    dataRef,
-    itens
-  };
+  const payload = { dataRef, itens };
 
   setBusy(true);
   document.getElementById("saveStatusMateriais").innerText = "Enviando solicitação...";
@@ -583,12 +632,20 @@ async function salvarMateriais(){
   setBusy(false);
 
   if(!res || !res.ok){
-    document.getElementById("saveStatusMateriais").innerText = res?.error || "Erro ao enviar";
+    const msg = res?.error || "Erro ao enviar";
+    document.getElementById("saveStatusMateriais").innerText = msg;
+    showToast("❌ " + msg, "err");
     return;
   }
 
+  const saved = Number(res.saved || 0);
+
   document.getElementById("saveStatusMateriais").innerText =
-    `✅ Solicitação enviada! Linhas gravadas: ${res.saved || 0}`;
+    `✅ Solicitação enviada! Linhas gravadas: ${saved}`;
+
+  // ✅ CONFIRMAÇÃO (TOAST)
+  const msgOk = res.message || `✅ Materiais enviados com sucesso! (${saved} itens)`;
+  showToast(msgOk, "ok");
 
   // zera quantidades após salvar
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
