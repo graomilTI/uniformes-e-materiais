@@ -13,7 +13,6 @@
     input,select,button{ width:100%; padding:10px; border-radius:12px; border:1px solid #d1d5db; font-size:14px; box-sizing:border-box; }
     button{ cursor:pointer; border:none; background:#166534; color:#fff; font-weight:800; }
     button.secondary{ background:#374151; }
-    button.light{ background:#e5e7eb; color:#111827; border:1px solid #d1d5db; }
     button:disabled{ opacity:.6; cursor:not-allowed; }
     .row{ display:flex; gap:10px; flex-wrap:wrap; }
     .col{ flex:1; min-width:220px; }
@@ -92,12 +91,15 @@
 </div>
 
 <script>
-/** ✅ aponte pro seu Worker / WebApp */
-const API_BASE = "https://script.google.com/macros/s/AKfycbwzZXEzLQTZoUkC3M65bitZ2SgEkV1w98HrZAvbQ7k6IEethS53cxIDrSbbHBZXF4NdQA/exec";
+/**
+ * ✅ Coloque aqui a URL do seu Worker publicado:
+ * Ex: https://tamanhos-proxy.grao1000.workers.dev
+ */
+const API_BASE = "https://uniformes-e-materiais.tecnologia-f0c.workers.dev/";
 
 let token = localStorage.getItem("TAM_TOKEN") || "";
-let ctx = null; // {dataRef, gestor, colaboradores, tamanhos}
-let form = {};  // { "NOME": {tamanho} }
+let ctx = null;
+let form = {};
 
 function onlyDigits(s){ return String(s||"").replace(/\D/g,""); }
 function esc(s){ return String(s||"").replace(/[&<>"]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
@@ -198,7 +200,7 @@ async function carregar(){
 
   const cols = Array.isArray(res.colaboradores) ? res.colaboradores : [];
   cols.forEach(c=>{
-    form[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || g.supervisao || "" }; // default
+    form[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || g.supervisao || "" };
   });
 
   renderLista();
@@ -297,7 +299,6 @@ async function salvar(){
 }
 
 window.onload = async ()=>{
-  // máscara PIN
   const pin = document.getElementById("pin");
   pin.addEventListener("input", ()=> pin.value = onlyDigits(pin.value).slice(0,4));
   pin.addEventListener("keydown", (e)=>{ if(e.key==="Enter") login(); });
@@ -305,7 +306,6 @@ window.onload = async ()=>{
   show("loginCard");
   hide("app"); hide("bottomBar");
 
-  // auto-login se tiver token
   if(token){
     const p = await api("ping", {});
     if(p && p.ok){
