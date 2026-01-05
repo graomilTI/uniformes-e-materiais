@@ -77,7 +77,6 @@
       border-bottom:1px solid #f3f4f6;
     }
     .qtyRow:last-child{ border-bottom:none; }
-
     .qtyRow .matName{ font-weight:800; font-size:13px; }
     .qtyRow input[type="number"]{ text-align:center; }
 
@@ -90,6 +89,17 @@
       border-bottom:1px solid #f3f4f6;
     }
     .othersRow:last-child{ border-bottom:none; }
+
+    /* ✅ OUTROS UNIFORMES (nome + select) */
+    .othersUniRow{
+      display:grid;
+      grid-template-columns: 1fr 220px 42px;
+      gap:10px;
+      align-items:center;
+      padding:10px 0;
+      border-bottom:1px solid #f3f4f6;
+    }
+    .othersUniRow:last-child{ border-bottom:none; }
 
     .iconBtn{
       width:42px;
@@ -128,6 +138,8 @@
       .item{ grid-template-columns: 1fr; }
       .col{ min-width:160px; }
       .menuGrid{ grid-template-columns: 1fr; }
+      .othersUniRow{ grid-template-columns: 1fr; }
+      .othersUniRow .iconBtn{ width:100%; height:42px; }
     }
   </style>
 </head>
@@ -195,6 +207,11 @@
       </div>
 
       <div class="list" id="listaUniformes"></div>
+
+      <h3 style="margin-top:14px;">Outros (por tamanho)</h3>
+      <div class="muted">Preencha o item e selecione o tamanho (ex: “Jaqueta”, “Boné”, etc.). Deixe em branco se não usar.</div>
+      <div class="list" id="listaOutrosUniformes"></div>
+
       <div class="pdfArea" id="pdfArea"></div>
       <div id="saveStatusUniformes" class="muted" style="margin-top:8px;"></div>
     </div>
@@ -239,6 +256,8 @@ let ctx = null;
 
 // uniformes
 let formUniformes = {};
+// ✅ OUTROS UNIFORMES: 1 campo por tamanho (nome preenchível)
+let formOutrosUniformes = {}; // { "P": {nome:""}, ... }
 
 // materiais
 const MATERIAIS_FIXOS = [
@@ -247,7 +266,8 @@ const MATERIAIS_FIXOS = [
   "calador",
   "kit peneiras",
   "quarteador",
-  "micropipeta"
+  "micropipeta",
+  "alicate de corte" // ✅ NOVO
 ];
 let formMateriais = {};     // { "balança": 1, ... }
 let formOutros = [          // 5 itens
@@ -291,9 +311,7 @@ function showToast(msg, type){
   el.classList.add("show");
 
   if(toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>{
-    el.classList.remove("show");
-  }, 2600);
+  toastTimer = setTimeout(()=> el.classList.remove("show"), 2600);
 }
 
 async function api(action, args){
@@ -323,6 +341,7 @@ function logout(){
   token = "";
   ctx = null;
   formUniformes = {};
+  formOutrosUniformes = {};
   formMateriais = {};
   formOutros = [
     { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
@@ -364,9 +383,7 @@ async function login(){
 }
 
 async function bootstrap(){
-  // carrega contexto padrão (gestor + dataRef + colaboradores) para usar em uniformes
   setBusy(true);
-
   const res = await api("carregarListaRecente", {});
   setBusy(false);
 
@@ -386,18 +403,23 @@ async function bootstrap(){
   document.getElementById("dataInfo").innerHTML =
     `<span class="pill">Data mais recente do histórico: <b>${esc(res.dataRef||"")}</b></span>`;
 
-  // prepara uniformes default
-  formUniformes = {};
   const cols = Array.isArray(res.colaboradores) ? res.colaboradores : [];
+  const tamanhos = Array.isArray(res.tamanhos) ? res.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
+
+  // uniformes default
+  formUniformes = {};
   cols.forEach(c=>{
     formUniformes[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || g.supervisao || "" };
   });
 
-  // prepara materiais default
+  // ✅ outros uniformes: 1 campo por tamanho
+  formOutrosUniformes = {};
+  tamanhos.forEach(t => formOutrosUniformes[String(t).toUpperCase()] = { nome:"" });
+
+  // materiais default
   formMateriais = {};
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
 
-  // vai pro menu
   goMenu();
 }
 
@@ -407,9 +429,7 @@ function goMenu(){
   hide("screenUniformes");
   hide("screenMateriais");
 
-  setBottomActions(`
-    <button class="secondary" onclick="bootstrap()">Recarregar</button>
-  `);
+  setBottomActions(`<button class="secondary" onclick="bootstrap()">Recarregar</button>`);
 }
 
 function goUniformes(){
@@ -448,34 +468,62 @@ function renderUniformes(){
 
   if(!cols.length){
     document.getElementById("listaUniformes").innerHTML = `<div class="muted">Nenhum colaborador encontrado para este gestor.</div>`;
-    return;
+  }else{
+    const html = cols.map(c=>{
+      const nome = c.colaborador;
+      const sup = c.supervisao || "";
+      const val = (formUniformes[nome]?.tamanho || "M").toUpperCase();
+
+      return `
+        <div class="item">
+          <div>
+            <div class="nm">${esc(nome)}</div>
+            <div class="sub">Supervisão: ${esc(sup || "SEM SUPERVISÃO")}</div>
+          </div>
+          <select onchange="onUniformSizeChange('${encodeURIComponent(nome)}', this.value)">
+            ${tamanhos.map(t=>`<option ${String(t).toUpperCase()===val?"selected":""}>${esc(String(t).toUpperCase())}</option>`).join("")}
+          </select>
+        </div>
+      `;
+    }).join("");
+    document.getElementById("listaUniformes").innerHTML = html;
   }
 
-  const html = cols.map(c=>{
-    const nome = c.colaborador;
-    const sup = c.supervisao || "";
-    const val = (formUniformes[nome]?.tamanho || "M").toUpperCase();
-
+  // ✅ OUTROS POR TAMANHO
+  const outrosHtml = tamanhos.map((t)=>{
+    const T = String(t).toUpperCase();
+    const nome = String(formOutrosUniformes?.[T]?.nome || "");
     return `
-      <div class="item">
-        <div>
-          <div class="nm">${esc(nome)}</div>
-          <div class="sub">Supervisão: ${esc(sup || "SEM SUPERVISÃO")}</div>
-        </div>
-        <select onchange="onUniformSizeChange('${encodeURIComponent(nome)}', this.value)">
-          ${tamanhos.map(t=>`<option ${t===val?"selected":""}>${esc(t)}</option>`).join("")}
+      <div class="othersUniRow">
+        <input value="${esc(nome)}" placeholder="OUTROS – item para tamanho ${esc(T)}"
+               oninput="onOutroUniformeNomeChange('${encodeURIComponent(T)}', this.value)">
+        <select disabled>
+          <option selected>${esc(T)}</option>
         </select>
+        <button class="iconBtn" onclick="limparOutroUniforme('${encodeURIComponent(T)}')" title="Limpar">✕</button>
       </div>
     `;
   }).join("");
 
-  document.getElementById("listaUniformes").innerHTML = html;
+  document.getElementById("listaOutrosUniformes").innerHTML = outrosHtml;
 }
 
 function onUniformSizeChange(encNome, val){
   const nome = decodeURIComponent(encNome);
   if(!formUniformes[nome]) formUniformes[nome] = {};
   formUniformes[nome].tamanho = String(val||"M").toUpperCase();
+}
+
+function onOutroUniformeNomeChange(encT, v){
+  const t = decodeURIComponent(encT);
+  if(!formOutrosUniformes[t]) formOutrosUniformes[t] = { nome:"" };
+  formOutrosUniformes[t].nome = String(v || "").trim();
+}
+function limparOutroUniforme(encT){
+  const t = decodeURIComponent(encT);
+  if(!formOutrosUniformes[t]) formOutrosUniformes[t] = { nome:"" };
+  formOutrosUniformes[t].nome = "";
+  renderUniformes();
 }
 
 function b64ToBlob(b64, mime){
@@ -491,12 +539,15 @@ async function salvarUniformes(){
 
   const dataRef = ctx.dataRef;
   const cols = Array.isArray(ctx.colaboradores) ? ctx.colaboradores : [];
+  const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
+
   if(!cols.length){
     showToast("Nenhum colaborador na lista.", "err");
     alert("Nenhum colaborador na lista.");
     return;
   }
 
+  // base (colaboradores)
   const itens = cols.map(c=>{
     const nome = c.colaborador;
     return {
@@ -504,6 +555,19 @@ async function salvarUniformes(){
       supervisao: c.supervisao || "",
       tamanho: (formUniformes[nome]?.tamanho || "M").toUpperCase()
     };
+  });
+
+  // ✅ adiciona OUTROS (1 por tamanho) como linhas especiais
+  tamanhos.forEach(t=>{
+    const T = String(t).toUpperCase();
+    const nomeItem = String(formOutrosUniformes?.[T]?.nome || "").trim();
+    if(nomeItem){
+      itens.push({
+        colaborador: `OUTROS - ${nomeItem}`,
+        supervisao: (ctx?.gestor?.supervisao || ""),
+        tamanho: T
+      });
+    }
   });
 
   setBusy(true);
@@ -523,9 +587,7 @@ async function salvarUniformes(){
   document.getElementById("saveStatusUniformes").innerText =
     `✅ Salvo! Colaboradores: ${res.saved_colaboradores} | Resumos: ${res.saved_supervisao}`;
 
-  // ✅ CONFIRMAÇÃO (TOAST)
-  const msgOk = res.message || `✅ Uniformes enviados com sucesso! (${res.saved_colaboradores || 0} registros)`;
-  showToast(msgOk, "ok");
+  showToast(res.message || `✅ Uniformes enviados com sucesso! (${res.saved_colaboradores || 0} registros)`, "ok");
 
   const pdf = res.pdf || {};
   if(pdf.b64){
@@ -545,7 +607,6 @@ async function salvarUniformes(){
 function renderMateriais(){
   document.getElementById("saveStatusMateriais").innerText = "";
 
-  // fixos
   const fixosHtml = MATERIAIS_FIXOS.map(m=>{
     const qtd = Number(formMateriais[m] || 0);
     return `
@@ -560,7 +621,6 @@ function renderMateriais(){
 
   document.getElementById("listaMateriais").innerHTML = fixosHtml;
 
-  // outros (5)
   const outrosHtml = formOutros.map((it, idx)=>{
     return `
       <div class="othersRow">
@@ -583,12 +643,8 @@ function onMaterialQtyChange(encMat, v){
   formMateriais[mat] = n;
 }
 
-function onOutroNomeChange(i, v){
-  formOutros[i].nome = String(v || "").trim();
-}
-function onOutroQtdChange(i, v){
-  formOutros[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0);
-}
+function onOutroNomeChange(i, v){ formOutros[i].nome = String(v || "").trim(); }
+function onOutroQtdChange(i, v){ formOutros[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0); }
 function limparOutro(i){
   formOutros[i] = { nome:"", qtd:0 };
   renderMateriais();
@@ -599,22 +655,17 @@ async function salvarMateriais(){
 
   const dataRef = ctx.dataRef || "";
 
-  // monta itens (fixos + outros)
   const itens = [];
 
   MATERIAIS_FIXOS.forEach(m=>{
     const qtd = Number(formMateriais[m] || 0);
-    if(qtd > 0){
-      itens.push({ material: m, un: qtd });
-    }
+    if(qtd > 0) itens.push({ material: m, un: qtd });
   });
 
   formOutros.forEach(o=>{
     const nome = String(o.nome||"").trim();
     const qtd = Number(o.qtd||0);
-    if(nome && qtd > 0){
-      itens.push({ material: nome, un: qtd });
-    }
+    if(nome && qtd > 0) itens.push({ material: nome, un: qtd });
   });
 
   if(!itens.length){
@@ -624,11 +675,9 @@ async function salvarMateriais(){
     return;
   }
 
-  const payload = { dataRef, itens };
-
   setBusy(true);
   document.getElementById("saveStatusMateriais").innerText = "Enviando solicitação...";
-  const res = await api("salvarMateriais", { payload });
+  const res = await api("salvarMateriais", { payload: { dataRef, itens } });
   setBusy(false);
 
   if(!res || !res.ok){
@@ -639,15 +688,10 @@ async function salvarMateriais(){
   }
 
   const saved = Number(res.saved || 0);
+  document.getElementById("saveStatusMateriais").innerText = `✅ Solicitação enviada! Linhas gravadas: ${saved}`;
+  showToast(res.message || `✅ Materiais enviados com sucesso! (${saved} itens)`, "ok");
 
-  document.getElementById("saveStatusMateriais").innerText =
-    `✅ Solicitação enviada! Linhas gravadas: ${saved}`;
-
-  // ✅ CONFIRMAÇÃO (TOAST)
-  const msgOk = res.message || `✅ Materiais enviados com sucesso! (${saved} itens)`;
-  showToast(msgOk, "ok");
-
-  // zera quantidades após salvar
+  // reset
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
   formOutros = [
     { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
