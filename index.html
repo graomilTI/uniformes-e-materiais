@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Tamanhos – Gestores</title>
+  <title>Gestor – Uniformes e Materiais</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
     body{ margin:0; font-family:Arial,sans-serif; background:#f5f6f7; }
@@ -13,13 +13,19 @@
     input,select,button{ width:100%; padding:10px; border-radius:12px; border:1px solid #d1d5db; font-size:14px; box-sizing:border-box; }
     button{ cursor:pointer; border:none; background:#166534; color:#fff; font-weight:800; }
     button.secondary{ background:#374151; }
+    button.danger{ background:#111827; }
     button:disabled{ opacity:.6; cursor:not-allowed; }
+
     .row{ display:flex; gap:10px; flex-wrap:wrap; }
     .col{ flex:1; min-width:220px; }
+
     .pill{ display:inline-block; padding:4px 10px; background:#e0f2fe; border-radius:999px; font-size:12px; margin-top:6px; }
+
     .topbar{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
     .logoutBtn{ width:auto; padding:9px 14px; border-radius:999px; background:#111827; }
+
     .list{ margin-top:10px; }
+
     .item{
       display:grid;
       grid-template-columns: 1fr 220px;
@@ -31,13 +37,74 @@
     .item:last-child{ border-bottom:none; }
     .nm{ font-weight:800; font-size:13px; }
     .sub{ font-size:11px; color:#6b7280; margin-top:2px; }
+
     .bottomBar{ position:fixed; left:0; right:0; bottom:0; background:#f5f6f7; border-top:1px solid #e5e7eb; padding:10px; }
-    .bottomBar .inner{ max-width:1100px; margin:auto; display:flex; gap:10px; }
+    .bottomBar .inner{ max-width:1100px; margin:auto; display:flex; gap:10px; flex-wrap:wrap; }
+    .bottomBar .inner button{ width:auto; min-width:160px; }
+
     .pdfArea a{ display:inline-block; margin-top:8px; font-weight:800; color:#166534; text-decoration:none; }
+
+    .menuGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+    .menuBtn{
+      padding:16px;
+      border-radius:14px;
+      background:#166534;
+      color:#fff;
+      font-weight:900;
+      text-align:left;
+      box-shadow:0 1px 3px rgba(0,0,0,.06);
+    }
+    .menuBtn .small{
+      display:block;
+      font-weight:600;
+      opacity:.9;
+      margin-top:6px;
+      font-size:12px;
+    }
+    .menuBtn.secondary{ background:#0f172a; }
+
+    .qtyRow{
+      display:grid;
+      grid-template-columns: 1fr 120px;
+      gap:10px;
+      align-items:center;
+      padding:10px 0;
+      border-bottom:1px solid #f3f4f6;
+    }
+    .qtyRow:last-child{ border-bottom:none; }
+
+    .qtyRow .matName{ font-weight:800; font-size:13px; }
+    .qtyRow input[type="number"]{ text-align:center; }
+
+    .othersRow{
+      display:grid;
+      grid-template-columns: 1fr 120px 42px;
+      gap:10px;
+      align-items:center;
+      padding:10px 0;
+      border-bottom:1px solid #f3f4f6;
+    }
+    .othersRow:last-child{ border-bottom:none; }
+
+    .iconBtn{
+      width:42px;
+      height:42px;
+      border-radius:12px;
+      background:#374151;
+      color:#fff;
+      font-weight:900;
+    }
+
     @media (max-width: 720px){
       .wrap{ padding:12px 10px 110px; }
       .item{ grid-template-columns: 1fr; }
       .col{ min-width:160px; }
+      .menuGrid{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -64,30 +131,74 @@
 
   <!-- APP -->
   <div id="app" style="display:none;">
+
+    <!-- HEADER -->
     <div class="card">
       <div class="topbar">
         <div>
-          <h3 style="margin:0;">Relação de Tamanhos</h3>
+          <h3 style="margin:0;">Portal do Gestor</h3>
           <div id="topInfo" class="muted" style="margin-top:4px;"></div>
           <div id="dataInfo" class="muted"></div>
         </div>
         <button class="logoutBtn" onclick="logout()">Logout</button>
       </div>
-
-      <div class="list" id="lista"></div>
-
-      <div class="pdfArea" id="pdfArea"></div>
-      <div id="saveStatus" class="muted" style="margin-top:8px;"></div>
     </div>
-  </div>
 
+    <!-- MENU -->
+    <div id="screenMenu" class="card">
+      <h3>Escolha uma opção</h3>
+      <div class="muted">Selecione o que deseja registrar.</div>
+
+      <div class="menuGrid">
+        <button class="menuBtn" onclick="goUniformes()">
+          👕 Uniformes
+          <span class="small">Registre tamanhos por colaborador e gere PDF.</span>
+        </button>
+
+        <button class="menuBtn secondary" onclick="goMateriais()">
+          🧰 Materiais
+          <span class="small">Solicite materiais com quantidade e envie para a planilha.</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- UNIFORMES -->
+    <div id="screenUniformes" class="card" style="display:none;">
+      <div class="row" style="align-items:center;">
+        <div class="col"><h3>Uniformes</h3><div class="muted">Defina o tamanho por colaborador.</div></div>
+        <div class="col" style="max-width:220px;">
+          <button class="secondary" onclick="goMenu()">⬅️ Voltar</button>
+        </div>
+      </div>
+
+      <div class="list" id="listaUniformes"></div>
+      <div class="pdfArea" id="pdfArea"></div>
+      <div id="saveStatusUniformes" class="muted" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- MATERIAIS -->
+    <div id="screenMateriais" class="card" style="display:none;">
+      <div class="row" style="align-items:center;">
+        <div class="col"><h3>Materiais</h3><div class="muted">Informe a quantidade para cada material (0 = não solicitar).</div></div>
+        <div class="col" style="max-width:220px;">
+          <button class="secondary" onclick="goMenu()">⬅️ Voltar</button>
+        </div>
+      </div>
+
+      <div id="listaMateriais" class="list"></div>
+
+      <h3 style="margin-top:14px;">Outros (até 5)</h3>
+      <div class="muted">Preencha o nome do material e a quantidade. Deixe em branco se não usar.</div>
+      <div id="listaOutros" class="list"></div>
+
+      <div id="saveStatusMateriais" class="muted" style="margin-top:8px;"></div>
+    </div>
+
+  </div>
 </div>
 
 <div class="bottomBar" id="bottomBar" style="display:none;">
-  <div class="inner">
-    <button class="secondary" onclick="carregar()">Recarregar</button>
-    <button id="btnSalvar" onclick="salvar()">Salvar e Gerar PDF</button>
-  </div>
+  <div class="inner" id="bottomActions"></div>
 </div>
 
 <script>
@@ -99,7 +210,27 @@ const API_BASE = "https://uniformes-e-materiais.tecnologia-f0c.workers.dev/";
 
 let token = localStorage.getItem("TAM_TOKEN") || "";
 let ctx = null;
-let form = {};
+
+// uniformes
+let formUniformes = {};
+
+// materiais
+const MATERIAIS_FIXOS = [
+  "balança",
+  "impressora de laudo",
+  "calador",
+  "kit peneiras",
+  "quarteador",
+  "micropipeta"
+];
+let formMateriais = {};     // { "balança": 1, ... }
+let formOutros = [          // 5 itens
+  { nome:"", qtd:0 },
+  { nome:"", qtd:0 },
+  { nome:"", qtd:0 },
+  { nome:"", qtd:0 },
+  { nome:"", qtd:0 }
+];
 
 function onlyDigits(s){ return String(s||"").replace(/\D/g,""); }
 function esc(s){ return String(s||"").replace(/[&<>"]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
@@ -109,10 +240,18 @@ function hide(id){ document.getElementById(id).style.display="none"; }
 
 function setBusy(v){
   const b = !!v;
-  ["btnLogin","btnSalvar"].forEach(id=>{
+  ["btnLogin"].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.disabled = b;
   });
+
+  // desabilita botões do bottomBar
+  const btns = document.querySelectorAll("#bottomActions button");
+  btns.forEach(x => x.disabled = b);
+}
+
+function setBottomActions(html){
+  document.getElementById("bottomActions").innerHTML = html || "";
 }
 
 async function api(action, args){
@@ -141,7 +280,12 @@ function logout(){
   localStorage.removeItem("TAM_TOKEN");
   token = "";
   ctx = null;
-  form = {};
+  formUniformes = {};
+  formMateriais = {};
+  formOutros = [
+    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
+  ];
+
   document.getElementById("loginStatus").innerText = "Faça login novamente.";
   hide("app"); hide("bottomBar"); show("loginCard");
 }
@@ -172,54 +316,100 @@ async function login(){
   show("bottomBar");
   document.getElementById("loginStatus").innerText = "";
 
-  await carregar();
+  await bootstrap();
 }
 
-async function carregar(){
+async function bootstrap(){
+  // carrega contexto padrão (gestor + dataRef + colaboradores) para usar em uniformes
   setBusy(true);
-  document.getElementById("saveStatus").innerText = "Carregando lista mais recente...";
-  document.getElementById("pdfArea").innerHTML = "";
 
   const res = await api("carregarListaRecente", {});
   setBusy(false);
 
   if(!res || !res.ok){
-    document.getElementById("saveStatus").innerText = res?.error || "Erro ao carregar";
+    alert(res?.error || "Erro ao carregar dados do gestor.");
+    logout();
     return;
   }
 
   ctx = res;
-  form = {};
-
   const g = res.gestor || {};
+
   document.getElementById("topInfo").innerText =
     `Gestor: ${g.nome||"GESTOR"} | Coordenação: ${g.coordenacao||"-"} | Supervisão: ${g.supervisao||"(todas)"}`;
 
   document.getElementById("dataInfo").innerHTML =
     `<span class="pill">Data mais recente do histórico: <b>${esc(res.dataRef||"")}</b></span>`;
 
+  // prepara uniformes default
+  formUniformes = {};
   const cols = Array.isArray(res.colaboradores) ? res.colaboradores : [];
   cols.forEach(c=>{
-    form[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || g.supervisao || "" };
+    formUniformes[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || g.supervisao || "" };
   });
 
-  renderLista();
-  document.getElementById("saveStatus").innerText = `OK. Colaboradores: ${cols.length}`;
+  // prepara materiais default
+  formMateriais = {};
+  MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
+
+  // vai pro menu
+  goMenu();
 }
 
-function renderLista(){
+/** navegação */
+function goMenu(){
+  show("screenMenu");
+  hide("screenUniformes");
+  hide("screenMateriais");
+
+  setBottomActions(`
+    <button class="secondary" onclick="bootstrap()">Recarregar</button>
+  `);
+}
+
+function goUniformes(){
+  hide("screenMenu");
+  show("screenUniformes");
+  hide("screenMateriais");
+
+  renderUniformes();
+
+  setBottomActions(`
+    <button class="secondary" onclick="bootstrap()">Recarregar</button>
+    <button onclick="salvarUniformes()">Salvar e Gerar PDF</button>
+  `);
+}
+
+function goMateriais(){
+  hide("screenMenu");
+  hide("screenUniformes");
+  show("screenMateriais");
+
+  renderMateriais();
+
+  setBottomActions(`
+    <button class="secondary" onclick="bootstrap()">Recarregar</button>
+    <button onclick="salvarMateriais()">Enviar Solicitação</button>
+  `);
+}
+
+/** UNIFORMES */
+function renderUniformes(){
   const cols = Array.isArray(ctx?.colaboradores) ? ctx.colaboradores : [];
   const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
 
+  document.getElementById("pdfArea").innerHTML = "";
+  document.getElementById("saveStatusUniformes").innerText = "";
+
   if(!cols.length){
-    document.getElementById("lista").innerHTML = `<div class="muted">Nenhum colaborador encontrado para este gestor.</div>`;
+    document.getElementById("listaUniformes").innerHTML = `<div class="muted">Nenhum colaborador encontrado para este gestor.</div>`;
     return;
   }
 
   const html = cols.map(c=>{
     const nome = c.colaborador;
     const sup = c.supervisao || "";
-    const val = (form[nome]?.tamanho || "M").toUpperCase();
+    const val = (formUniformes[nome]?.tamanho || "M").toUpperCase();
 
     return `
       <div class="item">
@@ -227,20 +417,20 @@ function renderLista(){
           <div class="nm">${esc(nome)}</div>
           <div class="sub">Supervisão: ${esc(sup || "SEM SUPERVISÃO")}</div>
         </div>
-        <select onchange="onSizeChange('${encodeURIComponent(nome)}', this.value)">
+        <select onchange="onUniformSizeChange('${encodeURIComponent(nome)}', this.value)">
           ${tamanhos.map(t=>`<option ${t===val?"selected":""}>${esc(t)}</option>`).join("")}
         </select>
       </div>
     `;
   }).join("");
 
-  document.getElementById("lista").innerHTML = html;
+  document.getElementById("listaUniformes").innerHTML = html;
 }
 
-function onSizeChange(encNome, val){
+function onUniformSizeChange(encNome, val){
   const nome = decodeURIComponent(encNome);
-  if(!form[nome]) form[nome] = {};
-  form[nome].tamanho = String(val||"M").toUpperCase();
+  if(!formUniformes[nome]) formUniformes[nome] = {};
+  formUniformes[nome].tamanho = String(val||"M").toUpperCase();
 }
 
 function b64ToBlob(b64, mime){
@@ -251,7 +441,7 @@ function b64ToBlob(b64, mime){
   return new Blob([bytes], { type: mime || "application/pdf" });
 }
 
-async function salvar(){
+async function salvarUniformes(){
   if(!ctx) return;
 
   const dataRef = ctx.dataRef;
@@ -266,22 +456,23 @@ async function salvar(){
     return {
       colaborador: nome,
       supervisao: c.supervisao || "",
-      tamanho: (form[nome]?.tamanho || "M").toUpperCase()
+      tamanho: (formUniformes[nome]?.tamanho || "M").toUpperCase()
     };
   });
 
   setBusy(true);
-  document.getElementById("saveStatus").innerText = "Salvando e gerando PDF...";
+  document.getElementById("saveStatusUniformes").innerText = "Salvando e gerando PDF...";
+  document.getElementById("pdfArea").innerHTML = "";
 
   const res = await api("salvarTamanhos", { payload: { dataRef, itens } });
   setBusy(false);
 
   if(!res || !res.ok){
-    document.getElementById("saveStatus").innerText = res?.error || "Erro ao salvar";
+    document.getElementById("saveStatusUniformes").innerText = res?.error || "Erro ao salvar";
     return;
   }
 
-  document.getElementById("saveStatus").innerText =
+  document.getElementById("saveStatusUniformes").innerText =
     `✅ Salvo! Colaboradores: ${res.saved_colaboradores} | Resumos: ${res.saved_supervisao}`;
 
   const pdf = res.pdf || {};
@@ -298,6 +489,115 @@ async function salvar(){
   }
 }
 
+/** MATERIAIS */
+function renderMateriais(){
+  document.getElementById("saveStatusMateriais").innerText = "";
+
+  // fixos
+  const fixosHtml = MATERIAIS_FIXOS.map(m=>{
+    const qtd = Number(formMateriais[m] || 0);
+    return `
+      <div class="qtyRow">
+        <div class="matName">${esc(m)}</div>
+        <input type="number" min="0" step="1" value="${qtd}"
+               oninput="onMaterialQtyChange('${encodeURIComponent(m)}', this.value)"
+               placeholder="Qtd">
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("listaMateriais").innerHTML = fixosHtml;
+
+  // outros (5)
+  const outrosHtml = formOutros.map((it, idx)=>{
+    return `
+      <div class="othersRow">
+        <input value="${esc(it.nome)}" placeholder="Nome do material (outros)"
+               oninput="onOutroNomeChange(${idx}, this.value)">
+        <input type="number" min="0" step="1" value="${Number(it.qtd||0)}"
+               oninput="onOutroQtdChange(${idx}, this.value)"
+               placeholder="Qtd">
+        <button class="iconBtn" onclick="limparOutro(${idx})" title="Limpar">✕</button>
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("listaOutros").innerHTML = outrosHtml;
+}
+
+function onMaterialQtyChange(encMat, v){
+  const mat = decodeURIComponent(encMat);
+  const n = Math.max(0, parseInt(v || "0", 10) || 0);
+  formMateriais[mat] = n;
+}
+
+function onOutroNomeChange(i, v){
+  formOutros[i].nome = String(v || "").trim();
+}
+function onOutroQtdChange(i, v){
+  formOutros[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0);
+}
+function limparOutro(i){
+  formOutros[i] = { nome:"", qtd:0 };
+  renderMateriais();
+}
+
+async function salvarMateriais(){
+  if(!ctx) return;
+
+  const gestor = ctx.gestor || {};
+  const dataRef = ctx.dataRef || "";
+
+  // monta itens (fixos + outros)
+  const itens = [];
+
+  MATERIAIS_FIXOS.forEach(m=>{
+    const qtd = Number(formMateriais[m] || 0);
+    if(qtd > 0){
+      itens.push({ material: m, un: qtd });
+    }
+  });
+
+  formOutros.forEach(o=>{
+    const nome = String(o.nome||"").trim();
+    const qtd = Number(o.qtd||0);
+    if(nome && qtd > 0){
+      itens.push({ material: nome, un: qtd });
+    }
+  });
+
+  if(!itens.length){
+    document.getElementById("saveStatusMateriais").innerText =
+      "Informe pelo menos 1 material com quantidade maior que 0.";
+    return;
+  }
+
+  const payload = {
+    dataRef,
+    itens
+  };
+
+  setBusy(true);
+  document.getElementById("saveStatusMateriais").innerText = "Enviando solicitação...";
+  const res = await api("salvarMateriais", { payload });
+  setBusy(false);
+
+  if(!res || !res.ok){
+    document.getElementById("saveStatusMateriais").innerText = res?.error || "Erro ao enviar";
+    return;
+  }
+
+  document.getElementById("saveStatusMateriais").innerText =
+    `✅ Solicitação enviada! Linhas gravadas: ${res.saved || 0}`;
+
+  // zera quantidades após salvar
+  MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
+  formOutros = [
+    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
+  ];
+  renderMateriais();
+}
+
 window.onload = async ()=>{
   const pin = document.getElementById("pin");
   pin.addEventListener("input", ()=> pin.value = onlyDigits(pin.value).slice(0,4));
@@ -310,7 +610,7 @@ window.onload = async ()=>{
     const p = await api("ping", {});
     if(p && p.ok){
       hide("loginCard"); show("app"); show("bottomBar");
-      await carregar();
+      await bootstrap();
     }else{
       logout();
     }
