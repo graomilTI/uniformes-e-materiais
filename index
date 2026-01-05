@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tamanhos – Gestores</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <style>
+    body{ margin:0; font-family:Arial,sans-serif; background:#f5f6f7; }
+    .wrap{ max-width:1100px; margin:auto; padding:14px 14px 120px; }
+    .card{ background:#fff; border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+    h2,h3{ margin:0 0 8px; }
+    .muted{ color:#6b7280; font-size:12px; white-space:pre-line; }
+    input,select,button{ width:100%; padding:10px; border-radius:12px; border:1px solid #d1d5db; font-size:14px; box-sizing:border-box; }
+    button{ cursor:pointer; border:none; background:#166534; color:#fff; font-weight:800; }
+    button.secondary{ background:#374151; }
+    button.light{ background:#e5e7eb; color:#111827; border:1px solid #d1d5db; }
+    button:disabled{ opacity:.6; cursor:not-allowed; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; }
+    .col{ flex:1; min-width:220px; }
+    .pill{ display:inline-block; padding:4px 10px; background:#e0f2fe; border-radius:999px; font-size:12px; margin-top:6px; }
+    .topbar{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+    .logoutBtn{ width:auto; padding:9px 14px; border-radius:999px; background:#111827; }
+    .list{ margin-top:10px; }
+    .item{
+      display:grid;
+      grid-template-columns: 1fr 220px;
+      gap:10px;
+      align-items:center;
+      padding:10px 0;
+      border-bottom:1px solid #f3f4f6;
+    }
+    .item:last-child{ border-bottom:none; }
+    .nm{ font-weight:800; font-size:13px; }
+    .sub{ font-size:11px; color:#6b7280; margin-top:2px; }
+    .bottomBar{ position:fixed; left:0; right:0; bottom:0; background:#f5f6f7; border-top:1px solid #e5e7eb; padding:10px; }
+    .bottomBar .inner{ max-width:1100px; margin:auto; display:flex; gap:10px; }
+    .pdfArea a{ display:inline-block; margin-top:8px; font-weight:800; color:#166534; text-decoration:none; }
+    @media (max-width: 720px){
+      .wrap{ padding:12px 10px 110px; }
+      .item{ grid-template-columns: 1fr; }
+      .col{ min-width:160px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <!-- LOGIN -->
+  <div id="loginCard" class="card">
+    <h2>Login do Gestor</h2>
+    <div class="muted">Informe seu <b>PIN (4 dígitos)</b> (aba Gestores).</div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="col">
+        <input id="pin" placeholder="PIN" inputmode="numeric" maxlength="4" autocomplete="off">
+      </div>
+      <div class="col">
+        <button id="btnLogin" onclick="login()">Entrar</button>
+      </div>
+    </div>
+
+    <div id="loginStatus" class="muted" style="margin-top:8px;"></div>
+  </div>
+
+  <!-- APP -->
+  <div id="app" style="display:none;">
+    <div class="card">
+      <div class="topbar">
+        <div>
+          <h3 style="margin:0;">Relação de Tamanhos</h3>
+          <div id="topInfo" class="muted" style="margin-top:4px;"></div>
+          <div id="dataInfo" class="muted"></div>
+        </div>
+        <button class="logoutBtn" onclick="logout()">Logout</button>
+      </div>
+
+      <div class="list" id="lista"></div>
+
+      <div class="pdfArea" id="pdfArea"></div>
+      <div id="saveStatus" class="muted" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="bottomBar" id="bottomBar" style="display:none;">
+  <div class="inner">
+    <button class="secondary" onclick="carregar()">Recarregar</button>
+    <button id="btnSalvar" onclick="salvar()">Salvar e Gerar PDF</button>
+  </div>
+</div>
+
+<script>
+/** ✅ aponte pro seu Worker / WebApp */
+const API_BASE = "https://script.google.com/macros/s/AKfycbwzZXEzLQTZoUkC3M65bitZ2SgEkV1w98HrZAvbQ7k6IEethS53cxIDrSbbHBZXF4NdQA/exec";
+
+let token = localStorage.getItem("TAM_TOKEN") || "";
+let ctx = null; // {dataRef, gestor, colaboradores, tamanhos}
+let form = {};  // { "NOME": {tamanho} }
+
+function onlyDigits(s){ return String(s||"").replace(/\D/g,""); }
+function esc(s){ return String(s||"").replace(/[&<>"]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
+
+function show(id){ document.getElementById(id).style.display="block"; }
+function hide(id){ document.getElementById(id).style.display="none"; }
+
+function setBusy(v){
+  const b = !!v;
+  ["btnLogin","btnSalvar"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.disabled = b;
+  });
+}
+
+async function api(action, args){
+  const payload = { action, ...(args||{}) };
+  if(token && !payload.token && action !== "loginPIN"){
+    payload.token = token;
+  }
+
+  let txt = "";
+  try{
+    const res = await fetch(API_BASE, {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    txt = await res.text();
+  }catch(e){
+    return { ok:false, error:"Falha de rede / CORS", raw:String(e) };
+  }
+
+  try{ return JSON.parse(txt); }
+  catch(e){ return { ok:false, error:"Resposta inválida do servidor", raw:txt }; }
+}
+
+function logout(){
+  localStorage.removeItem("TAM_TOKEN");
+  token = "";
+  ctx = null;
+  form = {};
+  document.getElementById("loginStatus").innerText = "Faça login novamente.";
+  hide("app"); hide("bottomBar"); show("loginCard");
+}
+
+async function login(){
+  const pin = onlyDigits(document.getElementById("pin").value).slice(0,4);
+  if(pin.length < 4){
+    document.getElementById("loginStatus").innerText = "Informe 4 dígitos.";
+    return;
+  }
+
+  setBusy(true);
+  document.getElementById("loginStatus").innerText = "Entrando...";
+
+  const out = await api("loginPIN", { pin });
+  setBusy(false);
+
+  if(!out || !out.ok){
+    document.getElementById("loginStatus").innerText = out?.error || "Erro";
+    return;
+  }
+
+  token = out.token;
+  localStorage.setItem("TAM_TOKEN", token);
+
+  hide("loginCard");
+  show("app");
+  show("bottomBar");
+  document.getElementById("loginStatus").innerText = "";
+
+  await carregar();
+}
+
+async function carregar(){
+  setBusy(true);
+  document.getElementById("saveStatus").innerText = "Carregando lista mais recente...";
+  document.getElementById("pdfArea").innerHTML = "";
+
+  const res = await api("carregarListaRecente", {});
+  setBusy(false);
+
+  if(!res || !res.ok){
+    document.getElementById("saveStatus").innerText = res?.error || "Erro ao carregar";
+    return;
+  }
+
+  ctx = res;
+  form = {};
+
+  const g = res.gestor || {};
+  document.getElementById("topInfo").innerText =
+    `Gestor: ${g.nome||"GESTOR"} | Coordenação: ${g.coordenacao||"-"} | Supervisão: ${g.supervisao||"(todas)"}`;
+
+  document.getElementById("dataInfo").innerHTML =
+    `<span class="pill">Data mais recente do histórico: <b>${esc(res.dataRef||"")}</b></span>`;
+
+  const cols = Array.isArray(res.colaboradores) ? res.colaboradores : [];
+  cols.forEach(c=>{
+    form[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || g.supervisao || "" }; // default
+  });
+
+  renderLista();
+  document.getElementById("saveStatus").innerText = `OK. Colaboradores: ${cols.length}`;
+}
+
+function renderLista(){
+  const cols = Array.isArray(ctx?.colaboradores) ? ctx.colaboradores : [];
+  const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
+
+  if(!cols.length){
+    document.getElementById("lista").innerHTML = `<div class="muted">Nenhum colaborador encontrado para este gestor.</div>`;
+    return;
+  }
+
+  const html = cols.map(c=>{
+    const nome = c.colaborador;
+    const sup = c.supervisao || "";
+    const val = (form[nome]?.tamanho || "M").toUpperCase();
+
+    return `
+      <div class="item">
+        <div>
+          <div class="nm">${esc(nome)}</div>
+          <div class="sub">Supervisão: ${esc(sup || "SEM SUPERVISÃO")}</div>
+        </div>
+        <select onchange="onSizeChange('${encodeURIComponent(nome)}', this.value)">
+          ${tamanhos.map(t=>`<option ${t===val?"selected":""}>${esc(t)}</option>`).join("")}
+        </select>
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("lista").innerHTML = html;
+}
+
+function onSizeChange(encNome, val){
+  const nome = decodeURIComponent(encNome);
+  if(!form[nome]) form[nome] = {};
+  form[nome].tamanho = String(val||"M").toUpperCase();
+}
+
+function b64ToBlob(b64, mime){
+  const bin = atob(b64);
+  const len = bin.length;
+  const bytes = new Uint8Array(len);
+  for(let i=0;i<len;i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime || "application/pdf" });
+}
+
+async function salvar(){
+  if(!ctx) return;
+
+  const dataRef = ctx.dataRef;
+  const cols = Array.isArray(ctx.colaboradores) ? ctx.colaboradores : [];
+  if(!cols.length){
+    alert("Nenhum colaborador na lista.");
+    return;
+  }
+
+  const itens = cols.map(c=>{
+    const nome = c.colaborador;
+    return {
+      colaborador: nome,
+      supervisao: c.supervisao || "",
+      tamanho: (form[nome]?.tamanho || "M").toUpperCase()
+    };
+  });
+
+  setBusy(true);
+  document.getElementById("saveStatus").innerText = "Salvando e gerando PDF...";
+
+  const res = await api("salvarTamanhos", { payload: { dataRef, itens } });
+  setBusy(false);
+
+  if(!res || !res.ok){
+    document.getElementById("saveStatus").innerText = res?.error || "Erro ao salvar";
+    return;
+  }
+
+  document.getElementById("saveStatus").innerText =
+    `✅ Salvo! Colaboradores: ${res.saved_colaboradores} | Resumos: ${res.saved_supervisao}`;
+
+  const pdf = res.pdf || {};
+  if(pdf.b64){
+    const blob = b64ToBlob(pdf.b64, "application/pdf");
+    const url = URL.createObjectURL(blob);
+
+    document.getElementById("pdfArea").innerHTML = `
+      <a href="${url}" download="${esc(pdf.fileName||"Relacao_Tamanhos.pdf")}">⬇️ Baixar PDF</a>
+      <div class="muted">Se o link não baixar automaticamente, clique novamente.</div>
+    `;
+  }else{
+    document.getElementById("pdfArea").innerHTML = `<div class="muted">PDF não retornou.</div>`;
+  }
+}
+
+window.onload = async ()=>{
+  // máscara PIN
+  const pin = document.getElementById("pin");
+  pin.addEventListener("input", ()=> pin.value = onlyDigits(pin.value).slice(0,4));
+  pin.addEventListener("keydown", (e)=>{ if(e.key==="Enter") login(); });
+
+  show("loginCard");
+  hide("app"); hide("bottomBar");
+
+  // auto-login se tiver token
+  if(token){
+    const p = await api("ping", {});
+    if(p && p.ok){
+      hide("loginCard"); show("app"); show("bottomBar");
+      await carregar();
+    }else{
+      logout();
+    }
+  }
+};
+</script>
+</body>
+</html>
