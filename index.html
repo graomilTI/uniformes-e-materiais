@@ -117,18 +117,25 @@
     }
     .othersUniRow input[type="number"]{ text-align:center; }
 
-    /* EPIs - botina dinâmica (tamanho + qtd + add) */
-    .botinaAddRow{
+    /* ✅ EPIs - Botina: tamanho + un + botão "+" NA MESMA LINHA */
+    .botinaInlineRow{
       display:grid;
-      grid-template-columns: 1fr 120px 160px;
+      grid-template-columns: 1fr 120px 52px;
       gap:10px;
       align-items:center;
       padding:10px 0;
       border-bottom:1px solid #f3f4f6;
     }
-    .botinaAddRow:last-child{ border-bottom:none; }
-    .botinaAddRow input[type="number"]{ text-align:center; }
-    .botinaAddRow button{ width:100%; min-width:0; }
+    .botinaInlineRow:last-child{ border-bottom:none; }
+    .botinaInlineRow input[type="number"]{ text-align:center; }
+    .botinaPlusBtn{
+      width:52px;
+      height:42px;
+      border-radius:12px;
+      background:#166534;
+      color:#fff;
+      font-weight:900;
+    }
 
     /* Toast */
     .toast{
@@ -153,7 +160,7 @@
       .othersUniRow{ grid-template-columns: 1fr; }
       .othersRow{ grid-template-columns: 1fr; }
       .qtyRow{ grid-template-columns: 1fr; }
-      .botinaAddRow{ grid-template-columns: 1fr; }
+      .botinaInlineRow{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -311,8 +318,8 @@ const MATERIAIS_FIXOS = [
   "micropipeta",
   "alicate de corte"
 ];
-let formMateriais = {};     // { "balança": 1, ... }
-let formOutros = [          // 5 itens
+let formMateriais = {};
+let formOutros = [
   { nome:"", qtd:0 },
   { nome:"", qtd:0 },
   { nome:"", qtd:0 },
@@ -320,8 +327,8 @@ let formOutros = [          // 5 itens
   { nome:"", qtd:0 }
 ];
 
-// OUTROS uniformes: unidade por tamanho (OUTROS fixo)
-let formOutrosQtd = {}; // { "P": 0, "M": 0, ... }
+// OUTROS uniformes
+let formOutrosQtd = {};
 
 // EPIs
 const EPIS_FIXOS = [
@@ -332,12 +339,12 @@ const EPIS_FIXOS = [
   "Mascara PFF2",
   "Botina"
 ];
-let formEPIs = {}; // { "Capacete": 0, ... } (Botina aqui não é usada como número único, mas mantemos)
+let formEPIs = {};
 let botinaItens = []; // [{tam:"40", qtd:2}, ...]
 let botinaTamInput = "";
 let botinaQtdInput = 0;
 
-let formOutrosEPIs = [ // 4 slots
+let formOutrosEPIs = [
   { nome:"", qtd:0 },
   { nome:"", qtd:0 },
   { nome:"", qtd:0 },
@@ -403,17 +410,14 @@ function logout(){
 
   formUniformes = {};
 
-  // materiais
   formMateriais = {};
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
   formOutros = [
     { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
   ];
 
-  // uniformes OUTROS
   formOutrosQtd = {};
 
-  // EPIs
   formEPIs = {};
   EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
   botinaItens = [];
@@ -487,7 +491,7 @@ async function bootstrap(){
     formUniformes[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || "" };
   });
 
-  // OUTROS uniformes: unidade por tamanho
+  // OUTROS uniformes
   const tamanhos = Array.isArray(res.tamanhos) ? res.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
   formOutrosQtd = {};
   tamanhos.forEach(t => formOutrosQtd[String(t).toUpperCase()] = 0);
@@ -595,7 +599,6 @@ function renderUniformes(){
     document.getElementById("listaUniformes").innerHTML = html;
   }
 
-  // OUTROS (unidade por tamanho)
   const outrosHtml = tamanhos.map((t)=>{
     const T = String(t).toUpperCase();
     const qtd = Number(formOutrosQtd?.[T] || 0);
@@ -660,6 +663,8 @@ async function salvarUniformes(){
     return {
       colaborador: nome,
       supervisao: c.supervisao || "",
+      // ✅ se o seu GAS já aceita coordenacao por item, pode mandar também:
+      // coordenacao: c.coordenacao || "",
       tamanho: (formUniformes[nome]?.tamanho || "M").toUpperCase()
     };
   });
@@ -748,16 +753,9 @@ function onMaterialQtyChange(encMat, v){
   formMateriais[mat] = n;
 }
 
-function onOutroNomeChange(i, v){
-  formOutros[i].nome = String(v || "").trim();
-}
-function onOutroQtdChangeMat(i, v){
-  formOutros[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0);
-}
-function limparOutroMat(i){
-  formOutros[i] = { nome:"", qtd:0 };
-  renderMateriais();
-}
+function onOutroNomeChange(i, v){ formOutros[i].nome = String(v || "").trim(); }
+function onOutroQtdChangeMat(i, v){ formOutros[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0); }
+function limparOutroMat(i){ formOutros[i] = { nome:"", qtd:0 }; renderMateriais(); }
 
 async function salvarMateriais(){
   if(!ctx) return;
@@ -767,17 +765,13 @@ async function salvarMateriais(){
 
   MATERIAIS_FIXOS.forEach(m=>{
     const qtd = Number(formMateriais[m] || 0);
-    if(qtd > 0){
-      itens.push({ material: m, un: qtd });
-    }
+    if(qtd > 0) itens.push({ material: m, un: qtd });
   });
 
   formOutros.forEach(o=>{
     const nome = String(o.nome||"").trim();
     const qtd = Number(o.qtd||0);
-    if(nome && qtd > 0){
-      itens.push({ material: nome, un: qtd });
-    }
+    if(nome && qtd > 0) itens.push({ material: nome, un: qtd });
   });
 
   if(!itens.length){
@@ -814,12 +808,12 @@ function renderEPIs(){
 
   const fixosHtml = EPIS_FIXOS.map(epi=>{
     if(epi === "Botina"){
-      const rows = botinaItens.map((it, idx)=>`
+      const lista = botinaItens.map((it, idx)=>`
         <div class="othersRow" style="border-bottom:none; padding:8px 0;">
           <input value="Tam ${esc(it.tam)}" disabled>
           <input type="number" min="0" step="1" value="${Number(it.qtd||0)}"
                  oninput="onBotinaQtdChange(${idx}, this.value)"
-                 placeholder="Qtd">
+                 placeholder="Un">
           <button class="iconBtn" onclick="removerBotina(${idx})" title="Remover">✕</button>
         </div>
       `).join("");
@@ -827,20 +821,23 @@ function renderEPIs(){
       return `
         <div style="padding:10px 0; border-bottom:1px solid #f3f4f6;">
           <div class="qtyRow" style="border-bottom:none; padding:0 0 6px 0;">
-            <div class="matName"><b>Botina</b> <span class="muted">(adicione quantos tamanhos precisar)</span></div>
+            <div class="matName"><b>Botina</b> <span class="muted">Digite o tamanho</span></div>
             <div></div>
           </div>
 
-          <div class="botinaAddRow">
-            <input value="${esc(botinaTamInput)}" placeholder="Tamanho (35–44)" inputmode="numeric"
+          <!-- ✅ tamanho + unidade + + (na mesma linha) -->
+          <div class="botinaInlineRow">
+            <input value="${esc(botinaTamInput)}"
+                   placeholder="Digite o tamanho"
+                   inputmode="numeric"
                    oninput="onBotinaTamInput(this.value)">
             <input type="number" min="0" step="1" value="${Number(botinaQtdInput||0)}"
                    oninput="onBotinaQtdInput(this.value)"
-                   placeholder="Qtd">
-            <button onclick="addBotina()">+ Adicionar tamanho</button>
+                   placeholder="Un">
+            <button class="botinaPlusBtn" onclick="addBotina()" title="Adicionar">+</button>
           </div>
 
-          <div>${rows || `<div class="muted" style="margin-top:6px;">Nenhum tamanho adicionado.</div>`}</div>
+          <div>${lista || `<div class="muted" style="margin-top:6px;">Nenhum tamanho adicionado.</div>`}</div>
         </div>
       `;
     }
@@ -851,7 +848,7 @@ function renderEPIs(){
         <div class="matName">${esc(epi)}</div>
         <input type="number" min="0" step="1" value="${qtd}"
                oninput="onEpiQtyChange('${encodeURIComponent(epi)}', this.value)"
-               placeholder="Qtd">
+               placeholder="Un">
       </div>
     `;
   }).join("");
@@ -865,7 +862,7 @@ function renderEPIs(){
                oninput="onOutroEpiNomeChange(${idx}, this.value)">
         <input type="number" min="0" step="1" value="${Number(it.qtd||0)}"
                oninput="onOutroEpiQtdChange(${idx}, this.value)"
-               placeholder="Qtd">
+               placeholder="Un">
         <button class="iconBtn" onclick="limparOutroEpi(${idx})" title="Limpar">✕</button>
       </div>
     `;
@@ -881,6 +878,7 @@ function onEpiQtyChange(encEpi, v){
 }
 
 function onBotinaTamInput(v){
+  // ✅ sem trava: aceita qualquer texto (mas vamos tentar manter só dígitos)
   botinaTamInput = String(v||"").trim();
 }
 function onBotinaQtdInput(v){
@@ -894,31 +892,32 @@ function removerBotina(i){
   botinaItens.splice(i, 1);
   renderEPIs();
 }
+
+/**
+ * ✅ sem trava (35–44). Se o gestor digitar "40" ou "40/41" vai.
+ * - Normaliza espaços
+ * - Se já existir mesmo tamanho, soma
+ */
 function addBotina(){
-  const tam = onlyDigits(botinaTamInput);
+  const tam = String(botinaTamInput||"").trim();
   const qtd = Math.max(0, parseInt(botinaQtdInput||"0", 10) || 0);
 
   if(!tam){
-    document.getElementById("saveStatusEPIs").innerText = "Botina: informe o tamanho.";
-    return;
-  }
-  const t = Number(tam);
-  if(!(t >= 35 && t <= 44)){
-    document.getElementById("saveStatusEPIs").innerText = "Botina: tamanho fora do padrão (35–44).";
+    document.getElementById("saveStatusEPIs").innerText = "Botina: digite o tamanho.";
     return;
   }
   if(qtd <= 0){
-    document.getElementById("saveStatusEPIs").innerText = "Botina: informe a quantidade (> 0).";
+    document.getElementById("saveStatusEPIs").innerText = "Botina: informe a unidade (> 0).";
     return;
   }
 
-  // se já existe, soma
-  const idx = botinaItens.findIndex(x => String(x.tam) === String(t));
+  const tamKey = tam.replace(/\s+/g," ").trim();
+
+  const idx = botinaItens.findIndex(x => String(x.tam) === tamKey);
   if(idx >= 0){
     botinaItens[idx].qtd = Number(botinaItens[idx].qtd||0) + qtd;
   }else{
-    botinaItens.push({ tam: String(t), qtd });
-    botinaItens.sort((a,b)=> Number(a.tam) - Number(b.tam));
+    botinaItens.push({ tam: tamKey, qtd });
   }
 
   botinaTamInput = "";
@@ -927,22 +926,14 @@ function addBotina(){
   renderEPIs();
 }
 
-function onOutroEpiNomeChange(i, v){
-  formOutrosEPIs[i].nome = String(v || "").trim();
-}
-function onOutroEpiQtdChange(i, v){
-  formOutrosEPIs[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0);
-}
-function limparOutroEpi(i){
-  formOutrosEPIs[i] = { nome:"", qtd:0 };
-  renderEPIs();
-}
+function onOutroEpiNomeChange(i, v){ formOutrosEPIs[i].nome = String(v || "").trim(); }
+function onOutroEpiQtdChange(i, v){ formOutrosEPIs[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0); }
+function limparOutroEpi(i){ formOutrosEPIs[i] = { nome:"", qtd:0 }; renderEPIs(); }
 
 async function salvarEPIs(){
   if(!ctx) return;
 
   const dataRef = ctx.dataRef || "";
-
   const itens = [];
 
   // fixos (exceto Botina)
@@ -952,7 +943,7 @@ async function salvarEPIs(){
     if(qtd > 0) itens.push({ epi, un: qtd });
   });
 
-  // Botina: vários tamanhos
+  // botina: vários tamanhos
   botinaItens.forEach(it=>{
     const qtd = Number(it.qtd||0);
     const tam = String(it.tam||"").trim();
@@ -969,7 +960,7 @@ async function salvarEPIs(){
   const hasOutros = outros.some(o => o.nome && o.un > 0);
   if(!itens.length && !hasOutros){
     document.getElementById("saveStatusEPIs").innerText =
-      "Informe pelo menos 1 EPI com quantidade maior que 0.";
+      "Informe pelo menos 1 EPI com unidade maior que 0.";
     return;
   }
 
@@ -988,7 +979,6 @@ async function salvarEPIs(){
 
   showToast(res.message || "EPI's enviados com sucesso!");
 
-  // zera após salvar
   EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
   botinaItens = [];
   botinaTamInput = "";
