@@ -117,6 +117,28 @@
     }
     .othersUniRow input[type="number"]{ text-align:center; }
 
+    /* EPIs: Botina com tamanho + qtd */
+    .epiRow{
+      display:grid;
+      grid-template-columns: 1fr 140px;
+      gap:10px;
+      align-items:center;
+      padding:10px 0;
+      border-bottom:1px solid #f3f4f6;
+    }
+    .epiRow:last-child{ border-bottom:none; }
+
+    .epiBotinaRow{
+      display:grid;
+      grid-template-columns: 1fr 140px 140px;
+      gap:10px;
+      align-items:center;
+      padding:10px 0;
+      border-bottom:1px solid #f3f4f6;
+    }
+    .epiBotinaRow:last-child{ border-bottom:none; }
+    .epiBotinaRow input[type="number"]{ text-align:center; }
+
     /* Toast */
     .toast{
       position:fixed; left:50%; bottom:86px; transform:translateX(-50%);
@@ -140,6 +162,8 @@
       .othersUniRow{ grid-template-columns: 1fr; }
       .othersRow{ grid-template-columns: 1fr; }
       .qtyRow{ grid-template-columns: 1fr; }
+      .epiRow{ grid-template-columns: 1fr; }
+      .epiBotinaRow{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -194,6 +218,12 @@
           🧰 Materiais
           <span class="small">Solicite materiais com quantidade e envie para a planilha.</span>
         </button>
+
+        <!-- ✅ NOVO: EPIs -->
+        <button class="menuBtn secondary" onclick="goEPIs()">
+          🦺 EPI's
+          <span class="small">Solicite EPIs com quantidade, Botina com tamanho e 4 OUTROS.</span>
+        </button>
       </div>
     </div>
 
@@ -240,6 +270,27 @@
       <div id="saveStatusMateriais" class="muted" style="margin-top:8px;"></div>
     </div>
 
+    <!-- ✅ EPIs -->
+    <div id="screenEPIs" class="card" style="display:none;">
+      <div class="row" style="align-items:center;">
+        <div class="col">
+          <h3>EPI's</h3>
+          <div class="muted">Selecione as quantidades (0 = não solicitar). Botina exige tamanho.</div>
+        </div>
+        <div class="col" style="max-width:220px;">
+          <button class="secondary" onclick="goMenu()">⬅️ Voltar</button>
+        </div>
+      </div>
+
+      <div id="listaEPIs" class="list"></div>
+
+      <h3 style="margin-top:14px;">Outros (4)</h3>
+      <div class="muted">Preencha o nome do EPI e a quantidade. Deixe em branco se não usar.</div>
+      <div id="listaOutrosEPIs" class="list"></div>
+
+      <div id="saveStatusEPIs" class="muted" style="margin-top:8px;"></div>
+    </div>
+
   </div>
 </div>
 
@@ -282,6 +333,24 @@ let formOutros = [          // 5 itens
 
 // ✅ OUTROS uniformes: unidade por tamanho (OUTROS fixo)
 let formOutrosQtd = {}; // { "P": 0, "M": 0, ... }
+
+// ✅ EPIs
+const EPIS_FIXOS = [
+  "Capacete",
+  "Protetor auricular",
+  "Óculos Transparente",
+  "Luva PU",
+  "Mascara PFF2",
+  "Botina"
+];
+let formEPIs = {}; // { "Capacete": 0, ..., "Botina": 0 }
+let botinaTam = ""; // tamanho digitado
+let formOutrosEPIs = [ // 4 slots
+  { nome:"", qtd:0 },
+  { nome:"", qtd:0 },
+  { nome:"", qtd:0 },
+  { nome:"", qtd:0 }
+];
 
 function onlyDigits(s){ return String(s||"").replace(/\D/g,""); }
 function esc(s){ return String(s||"").replace(/[&<>"]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
@@ -341,13 +410,24 @@ function logout(){
   ctx = null;
 
   formUniformes = {};
+
+  // materiais
   formMateriais = {};
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
-
   formOutros = [
     { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
   ];
+
+  // uniformes OUTROS
   formOutrosQtd = {};
+
+  // EPIs
+  formEPIs = {};
+  EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
+  botinaTam = "";
+  formOutrosEPIs = [
+    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
+  ];
 
   document.getElementById("loginStatus").innerText = "Faça login novamente.";
   hide("app"); hide("bottomBar"); show("loginCard");
@@ -396,8 +476,13 @@ async function bootstrap(){
   ctx = res;
   const g = res.gestor || {};
 
+  // ✅ aqui o backend novo devolve supervisoesLiberadas (e não supervisao única)
+  const supTxt = (Array.isArray(g.supervisoesLiberadas) && g.supervisoesLiberadas.length)
+    ? g.supervisoesLiberadas.join("; ")
+    : "(todas)";
+
   document.getElementById("topInfo").innerText =
-    `Gestor: ${g.nome||"GESTOR"} | Coordenação: ${g.coordenacao||"-"} | Supervisão: ${g.supervisao||"(todas)"}`;
+    `Gestor: ${g.nome||"GESTOR"} | Coordenação: ${g.coordenacao||"-"} | Supervisões liberadas: ${supTxt}`;
 
   document.getElementById("dataInfo").innerHTML =
     `<span class="pill">Data mais recente do histórico: <b>${esc(res.dataRef||"")}</b></span>`;
@@ -406,10 +491,10 @@ async function bootstrap(){
   formUniformes = {};
   const cols = Array.isArray(res.colaboradores) ? res.colaboradores : [];
   cols.forEach(c=>{
-    formUniformes[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || g.supervisao || "" };
+    formUniformes[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || "" };
   });
 
-  // OUTROS: unidade por tamanho
+  // OUTROS uniformes: unidade por tamanho
   const tamanhos = Array.isArray(res.tamanhos) ? res.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
   formOutrosQtd = {};
   tamanhos.forEach(t => formOutrosQtd[String(t).toUpperCase()] = 0);
@@ -417,6 +502,14 @@ async function bootstrap(){
   // materiais default
   formMateriais = {};
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
+
+  // EPIs default
+  formEPIs = {};
+  EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
+  botinaTam = "";
+  formOutrosEPIs = [
+    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
+  ];
 
   goMenu();
 }
@@ -426,6 +519,7 @@ function goMenu(){
   show("screenMenu");
   hide("screenUniformes");
   hide("screenMateriais");
+  hide("screenEPIs");
 
   setBottomActions(`
     <button class="secondary" onclick="bootstrap()">Recarregar</button>
@@ -436,6 +530,7 @@ function goUniformes(){
   hide("screenMenu");
   show("screenUniformes");
   hide("screenMateriais");
+  hide("screenEPIs");
 
   renderUniformes();
 
@@ -449,12 +544,28 @@ function goMateriais(){
   hide("screenMenu");
   hide("screenUniformes");
   show("screenMateriais");
+  hide("screenEPIs");
 
   renderMateriais();
 
   setBottomActions(`
     <button class="secondary" onclick="bootstrap()">Recarregar</button>
     <button onclick="salvarMateriais()">Enviar Solicitação</button>
+  `);
+}
+
+// ✅ EPIs
+function goEPIs(){
+  hide("screenMenu");
+  hide("screenUniformes");
+  hide("screenMateriais");
+  show("screenEPIs");
+
+  renderEPIs();
+
+  setBottomActions(`
+    <button class="secondary" onclick="bootstrap()">Recarregar</button>
+    <button onclick="salvarEPIs()">Enviar Solicitação</button>
   `);
 }
 
@@ -490,7 +601,7 @@ function renderUniformes(){
     document.getElementById("listaUniformes").innerHTML = html;
   }
 
-  // ✅ OUTROS (unidade por tamanho) — garantido
+  // OUTROS (unidade por tamanho)
   const outrosHtml = tamanhos.map((t)=>{
     const T = String(t).toUpperCase();
     const qtd = Number(formOutrosQtd?.[T] || 0);
@@ -515,7 +626,6 @@ function onUniformSizeChange(encNome, val){
   formUniformes[nome].tamanho = String(val||"M").toUpperCase();
 }
 
-// ✅ separado para não conflitar com OUTROS materiais
 function onOutroQtdChangeUniforme(encT, v){
   const t = decodeURIComponent(encT);
   const n = Math.max(0, parseInt(v || "0", 10) || 0);
@@ -531,7 +641,6 @@ function b64ToBlob(b64, mime){
 }
 
 function autoDownloadBlob(url, filename){
-  // tenta baixar automaticamente (alguns browsers podem bloquear)
   const a = document.createElement("a");
   a.href = url;
   a.download = filename || "Relacao_Tamanhos.pdf";
@@ -561,7 +670,6 @@ async function salvarUniformes(){
     };
   });
 
-  // OUTROS: envia { "P": 2, ... } somente >0
   const outros = {};
   tamanhos.forEach(t=>{
     const T = String(t).toUpperCase();
@@ -592,19 +700,16 @@ async function salvarUniformes(){
     const url = URL.createObjectURL(blob);
     const fileName = (pdf.fileName || "Relacao_Tamanhos.pdf");
 
-    // ✅ link visível
     document.getElementById("pdfArea").innerHTML = `
       <a href="${url}" download="${esc(fileName)}">⬇️ Baixar PDF</a>
       <div class="muted">Se não baixar automaticamente, clique no link.</div>
     `;
 
-    // ✅ download automático
     autoDownloadBlob(url, fileName);
   }else{
     document.getElementById("pdfArea").innerHTML = `<div class="muted">PDF não retornou.</div>`;
   }
 
-  // zera OUTROS após salvar
   tamanhos.forEach(t => formOutrosQtd[String(t).toUpperCase()] = 0);
   renderUniformes();
 }
@@ -702,12 +807,147 @@ async function salvarMateriais(){
 
   showToast(res.message || "Materiais enviados com sucesso!");
 
-  // zera quantidades após salvar
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
   formOutros = [
     { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
   ];
   renderMateriais();
+}
+
+/** ✅ EPIs */
+function renderEPIs(){
+  document.getElementById("saveStatusEPIs").innerText = "";
+
+  // fixos
+  const fixosHtml = EPIS_FIXOS.map(epi=>{
+    const qtd = Number(formEPIs[epi] || 0);
+
+    if(epi === "Botina"){
+      return `
+        <div class="epiBotinaRow">
+          <div class="matName"><b>${esc(epi)}</b> <span class="muted">(informe tamanho)</span></div>
+          <input value="${esc(botinaTam)}" placeholder="Tamanho (ex.: 40)"
+                 oninput="onBotinaTamChange(this.value)">
+          <input type="number" min="0" step="1" value="${qtd}"
+                 oninput="onEpiQtyChange('${encodeURIComponent(epi)}', this.value)"
+                 placeholder="Qtd">
+        </div>
+      `;
+    }
+
+    return `
+      <div class="epiRow">
+        <div class="matName">${esc(epi)}</div>
+        <input type="number" min="0" step="1" value="${qtd}"
+               oninput="onEpiQtyChange('${encodeURIComponent(epi)}', this.value)"
+               placeholder="Qtd">
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("listaEPIs").innerHTML = fixosHtml;
+
+  // outros (4)
+  const outrosHtml = formOutrosEPIs.map((it, idx)=>{
+    return `
+      <div class="othersRow">
+        <input value="${esc(it.nome)}" placeholder="Nome do EPI (outros)"
+               oninput="onOutroEpiNomeChange(${idx}, this.value)">
+        <input type="number" min="0" step="1" value="${Number(it.qtd||0)}"
+               oninput="onOutroEpiQtdChange(${idx}, this.value)"
+               placeholder="Qtd">
+        <button class="iconBtn" onclick="limparOutroEpi(${idx})" title="Limpar">✕</button>
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("listaOutrosEPIs").innerHTML = outrosHtml;
+}
+
+function onEpiQtyChange(encEpi, v){
+  const epi = decodeURIComponent(encEpi);
+  const n = Math.max(0, parseInt(v || "0", 10) || 0);
+  formEPIs[epi] = n;
+}
+
+function onBotinaTamChange(v){
+  botinaTam = String(v || "").trim();
+}
+
+function onOutroEpiNomeChange(i, v){
+  formOutrosEPIs[i].nome = String(v || "").trim();
+}
+function onOutroEpiQtdChange(i, v){
+  formOutrosEPIs[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0);
+}
+function limparOutroEpi(i){
+  formOutrosEPIs[i] = { nome:"", qtd:0 };
+  renderEPIs();
+}
+
+async function salvarEPIs(){
+  if(!ctx) return;
+
+  const dataRef = ctx.dataRef || "";
+
+  // monta itens fixos + botina
+  const itens = [];
+  EPIS_FIXOS.forEach(epi=>{
+    const qtd = Number(formEPIs[epi] || 0);
+    if(qtd <= 0) return;
+
+    if(epi === "Botina"){
+      if(!String(botinaTam||"").trim()){
+        document.getElementById("saveStatusEPIs").innerText = "Botina: informe o tamanho.";
+        return;
+      }
+      itens.push({ epi, un: qtd, tamanho: String(botinaTam||"").trim() });
+    }else{
+      itens.push({ epi, un: qtd });
+    }
+  });
+
+  // se botina faltou tamanho e foi solicitada, já retornou acima, mas garante:
+  if(Number(formEPIs["Botina"]||0) > 0 && !String(botinaTam||"").trim()){
+    return;
+  }
+
+  // outros (4)
+  const outros = formOutrosEPIs.map(o=>({
+    nome: String(o.nome||"").trim(),
+    un: Math.max(0, parseInt(o.qtd||0, 10) || 0)
+  }));
+
+  // valida: pelo menos 1 item
+  const hasOutros = outros.some(o => o.nome && o.un > 0);
+  if(!itens.length && !hasOutros){
+    document.getElementById("saveStatusEPIs").innerText =
+      "Informe pelo menos 1 EPI com quantidade maior que 0.";
+    return;
+  }
+
+  setBusy(true);
+  document.getElementById("saveStatusEPIs").innerText = "Enviando solicitação...";
+  const res = await api("salvarEPIs", { payload: { dataRef, itens, outros } });
+  setBusy(false);
+
+  if(!res || !res.ok){
+    document.getElementById("saveStatusEPIs").innerText = res?.error || "Erro ao enviar";
+    return;
+  }
+
+  document.getElementById("saveStatusEPIs").innerText =
+    `✅ Solicitação enviada! Linhas gravadas: ${res.saved || 0}`;
+
+  showToast(res.message || "EPI's enviados com sucesso!");
+
+  // zera após salvar
+  EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
+  botinaTam = "";
+  formOutrosEPIs = [
+    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
+  ];
+  renderEPIs();
 }
 
 window.onload = async ()=>{
