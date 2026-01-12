@@ -38,6 +38,25 @@
     .nm{ font-weight:800; font-size:13px; }
     .sub{ font-size:11px; color:#6b7280; margin-top:2px; }
 
+    /* ✅ Cabeçalho/Separador por Supervisão */
+    .supHeader{
+      margin-top:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:#f0fdf4;
+      border:1px solid #dcfce7;
+      font-weight:900;
+      color:#166534;
+      font-size:13px;
+    }
+    .supHeader small{
+      display:block;
+      margin-top:3px;
+      font-weight:700;
+      color:#6b7280;
+      font-size:11px;
+    }
+
     .bottomBar{ position:fixed; left:0; right:0; bottom:0; background:#f5f6f7; border-top:1px solid #e5e7eb; padding:10px; }
     .bottomBar .inner{ max-width:1100px; margin:auto; display:flex; gap:10px; flex-wrap:wrap; }
     .bottomBar .inner button{ width:auto; min-width:160px; }
@@ -357,6 +376,33 @@ function esc(s){ return String(s||"").replace(/[&<>"]/g, c=>({ "&":"&amp;","<":"
 function show(id){ document.getElementById(id).style.display="block"; }
 function hide(id){ document.getElementById(id).style.display="none"; }
 
+function normKey(s){
+  return String(s||"")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}
+function isSemSup_(s){
+  const raw = String(s||"").trim();
+  return (!raw || normKey(raw) === normKey("SEM SUPERVISÃO"));
+}
+/** Ordena: Supervisão (A-Z, SEM SUPERVISÃO por último) + Nome (A-Z) */
+function sortColabsBySupThenName(arr){
+  return (Array.isArray(arr) ? [...arr] : []).sort((a,b)=>{
+    const saRaw = String(a?.supervisao || "").trim();
+    const sbRaw = String(b?.supervisao || "").trim();
+
+    const sa = isSemSup_(saRaw) ? "ZZZ" : normKey(saRaw);
+    const sb = isSemSup_(sbRaw) ? "ZZZ" : normKey(sbRaw);
+
+    if(sa !== sb) return sa.localeCompare(sb);
+
+    const na = normKey(a?.colaborador || "");
+    const nb = normKey(b?.colaborador || "");
+    return na.localeCompare(nb);
+  });
+}
+
 let toastTimer = null;
 function showToast(msg){
   const el = document.getElementById("toast");
@@ -567,27 +613,44 @@ function goEPIs(){
   `);
 }
 
-/** UNIFORMES */
+/** UNIFORMES (✅ ordena por supervisão -> nome + separador por supervisão) */
 function renderUniformes(){
-  const cols = Array.isArray(ctx?.colaboradores) ? ctx.colaboradores : [];
+  const colsRaw = Array.isArray(ctx?.colaboradores) ? ctx.colaboradores : [];
+  const cols = sortColabsBySupThenName(colsRaw);
   const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
 
   document.getElementById("pdfArea").innerHTML = "";
   document.getElementById("saveStatusUniformes").innerText = "";
 
   if(!cols.length){
-    document.getElementById("listaUniformes").innerHTML = `<div class="muted">Nenhum colaborador encontrado para este gestor.</div>`;
+    document.getElementById("listaUniformes").innerHTML =
+      `<div class="muted">Nenhum colaborador encontrado para este gestor.</div>`;
   }else{
+    let lastSupKey = null;
+
     const html = cols.map(c=>{
       const nome = c.colaborador;
-      const sup = c.supervisao || "";
+      const sup = String(c.supervisao || "").trim();
+      const supLabel = sup || "SEM SUPERVISÃO";
+
+      const supKey = isSemSup_(supLabel) ? "ZZZ" : normKey(supLabel);
+      const showHeader = (supKey !== lastSupKey);
+      lastSupKey = supKey;
+
       const val = (formUniformes[nome]?.tamanho || "M").toUpperCase();
 
       return `
+        ${showHeader ? `
+          <div class="supHeader">
+            ${esc(supLabel)}
+            <small>Colaboradores desta supervisão</small>
+          </div>
+        ` : ""}
+
         <div class="item">
           <div>
             <div class="nm">${esc(nome)}</div>
-            <div class="sub">Supervisão: ${esc(sup || "SEM SUPERVISÃO")}</div>
+            <div class="sub">Supervisão: ${esc(supLabel)}</div>
           </div>
           <select onchange="onUniformSizeChange('${encodeURIComponent(nome)}', this.value)">
             ${tamanhos.map(t=>`<option ${String(t).toUpperCase()===val?"selected":""}>${esc(String(t).toUpperCase())}</option>`).join("")}
@@ -663,7 +726,6 @@ async function salvarUniformes(){
     return {
       colaborador: nome,
       supervisao: c.supervisao || "",
-      // ✅ se o seu GAS já aceita coordenacao por item, pode mandar também:
       // coordenacao: c.coordenacao || "",
       tamanho: (formUniformes[nome]?.tamanho || "M").toUpperCase()
     };
@@ -825,7 +887,6 @@ function renderEPIs(){
             <div></div>
           </div>
 
-          <!-- ✅ tamanho + unidade + + (na mesma linha) -->
           <div class="botinaInlineRow">
             <input value="${esc(botinaTamInput)}"
                    placeholder="Digite o tamanho"
@@ -878,7 +939,6 @@ function onEpiQtyChange(encEpi, v){
 }
 
 function onBotinaTamInput(v){
-  // ✅ sem trava: aceita qualquer texto (mas vamos tentar manter só dígitos)
   botinaTamInput = String(v||"").trim();
 }
 function onBotinaQtdInput(v){
@@ -893,11 +953,6 @@ function removerBotina(i){
   renderEPIs();
 }
 
-/**
- * ✅ sem trava (35–44). Se o gestor digitar "40" ou "40/41" vai.
- * - Normaliza espaços
- * - Se já existir mesmo tamanho, soma
- */
 function addBotina(){
   const tam = String(botinaTamInput||"").trim();
   const qtd = Math.max(0, parseInt(botinaQtdInput||"0", 10) || 0);
@@ -936,14 +991,12 @@ async function salvarEPIs(){
   const dataRef = ctx.dataRef || "";
   const itens = [];
 
-  // fixos (exceto Botina)
   EPIS_FIXOS.forEach(epi=>{
     if(epi === "Botina") return;
     const qtd = Number(formEPIs[epi] || 0);
     if(qtd > 0) itens.push({ epi, un: qtd });
   });
 
-  // botina: vários tamanhos
   botinaItens.forEach(it=>{
     const qtd = Number(it.qtd||0);
     const tam = String(it.tam||"").trim();
