@@ -117,27 +117,18 @@
     }
     .othersUniRow input[type="number"]{ text-align:center; }
 
-    /* EPIs: Botina com tamanho + qtd */
-    .epiRow{
+    /* EPIs - botina dinâmica (tamanho + qtd + add) */
+    .botinaAddRow{
       display:grid;
-      grid-template-columns: 1fr 140px;
+      grid-template-columns: 1fr 120px 160px;
       gap:10px;
       align-items:center;
       padding:10px 0;
       border-bottom:1px solid #f3f4f6;
     }
-    .epiRow:last-child{ border-bottom:none; }
-
-    .epiBotinaRow{
-      display:grid;
-      grid-template-columns: 1fr 140px 140px;
-      gap:10px;
-      align-items:center;
-      padding:10px 0;
-      border-bottom:1px solid #f3f4f6;
-    }
-    .epiBotinaRow:last-child{ border-bottom:none; }
-    .epiBotinaRow input[type="number"]{ text-align:center; }
+    .botinaAddRow:last-child{ border-bottom:none; }
+    .botinaAddRow input[type="number"]{ text-align:center; }
+    .botinaAddRow button{ width:100%; min-width:0; }
 
     /* Toast */
     .toast{
@@ -162,8 +153,7 @@
       .othersUniRow{ grid-template-columns: 1fr; }
       .othersRow{ grid-template-columns: 1fr; }
       .qtyRow{ grid-template-columns: 1fr; }
-      .epiRow{ grid-template-columns: 1fr; }
-      .epiBotinaRow{ grid-template-columns: 1fr; }
+      .botinaAddRow{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -219,10 +209,9 @@
           <span class="small">Solicite materiais com quantidade e envie para a planilha.</span>
         </button>
 
-        <!-- ✅ NOVO: EPIs -->
         <button class="menuBtn secondary" onclick="goEPIs()">
           🦺 EPI's
-          <span class="small">Solicite EPIs com quantidade, Botina com tamanho e 4 OUTROS.</span>
+          <span class="small">Solicite EPIs com quantidade, Botina com vários tamanhos e 4 OUTROS.</span>
         </button>
       </div>
     </div>
@@ -270,12 +259,12 @@
       <div id="saveStatusMateriais" class="muted" style="margin-top:8px;"></div>
     </div>
 
-    <!-- ✅ EPIs -->
+    <!-- EPIs -->
     <div id="screenEPIs" class="card" style="display:none;">
       <div class="row" style="align-items:center;">
         <div class="col">
           <h3>EPI's</h3>
-          <div class="muted">Selecione as quantidades (0 = não solicitar). Botina exige tamanho.</div>
+          <div class="muted">Informe as quantidades (0 = não solicitar). Botina permite vários tamanhos.</div>
         </div>
         <div class="col" style="max-width:220px;">
           <button class="secondary" onclick="goMenu()">⬅️ Voltar</button>
@@ -331,10 +320,10 @@ let formOutros = [          // 5 itens
   { nome:"", qtd:0 }
 ];
 
-// ✅ OUTROS uniformes: unidade por tamanho (OUTROS fixo)
+// OUTROS uniformes: unidade por tamanho (OUTROS fixo)
 let formOutrosQtd = {}; // { "P": 0, "M": 0, ... }
 
-// ✅ EPIs
+// EPIs
 const EPIS_FIXOS = [
   "Capacete",
   "Protetor auricular",
@@ -343,8 +332,11 @@ const EPIS_FIXOS = [
   "Mascara PFF2",
   "Botina"
 ];
-let formEPIs = {}; // { "Capacete": 0, ..., "Botina": 0 }
-let botinaTam = ""; // tamanho digitado
+let formEPIs = {}; // { "Capacete": 0, ... } (Botina aqui não é usada como número único, mas mantemos)
+let botinaItens = []; // [{tam:"40", qtd:2}, ...]
+let botinaTamInput = "";
+let botinaQtdInput = 0;
+
 let formOutrosEPIs = [ // 4 slots
   { nome:"", qtd:0 },
   { nome:"", qtd:0 },
@@ -424,7 +416,9 @@ function logout(){
   // EPIs
   formEPIs = {};
   EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
-  botinaTam = "";
+  botinaItens = [];
+  botinaTamInput = "";
+  botinaQtdInput = 0;
   formOutrosEPIs = [
     { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
   ];
@@ -476,7 +470,6 @@ async function bootstrap(){
   ctx = res;
   const g = res.gestor || {};
 
-  // ✅ aqui o backend novo devolve supervisoesLiberadas (e não supervisao única)
   const supTxt = (Array.isArray(g.supervisoesLiberadas) && g.supervisoesLiberadas.length)
     ? g.supervisoesLiberadas.join("; ")
     : "(todas)";
@@ -506,7 +499,9 @@ async function bootstrap(){
   // EPIs default
   formEPIs = {};
   EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
-  botinaTam = "";
+  botinaItens = [];
+  botinaTamInput = "";
+  botinaQtdInput = 0;
   formOutrosEPIs = [
     { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
   ];
@@ -554,7 +549,6 @@ function goMateriais(){
   `);
 }
 
-// ✅ EPIs
 function goEPIs(){
   hide("screenMenu");
   hide("screenUniformes");
@@ -814,29 +808,46 @@ async function salvarMateriais(){
   renderMateriais();
 }
 
-/** ✅ EPIs */
+/** EPIs */
 function renderEPIs(){
   document.getElementById("saveStatusEPIs").innerText = "";
 
-  // fixos
   const fixosHtml = EPIS_FIXOS.map(epi=>{
-    const qtd = Number(formEPIs[epi] || 0);
-
     if(epi === "Botina"){
-      return `
-        <div class="epiBotinaRow">
-          <div class="matName"><b>${esc(epi)}</b> <span class="muted">(informe tamanho)</span></div>
-          <input value="${esc(botinaTam)}" placeholder="Tamanho (ex.: 40)"
-                 oninput="onBotinaTamChange(this.value)">
-          <input type="number" min="0" step="1" value="${qtd}"
-                 oninput="onEpiQtyChange('${encodeURIComponent(epi)}', this.value)"
+      const rows = botinaItens.map((it, idx)=>`
+        <div class="othersRow" style="border-bottom:none; padding:8px 0;">
+          <input value="Tam ${esc(it.tam)}" disabled>
+          <input type="number" min="0" step="1" value="${Number(it.qtd||0)}"
+                 oninput="onBotinaQtdChange(${idx}, this.value)"
                  placeholder="Qtd">
+          <button class="iconBtn" onclick="removerBotina(${idx})" title="Remover">✕</button>
+        </div>
+      `).join("");
+
+      return `
+        <div style="padding:10px 0; border-bottom:1px solid #f3f4f6;">
+          <div class="qtyRow" style="border-bottom:none; padding:0 0 6px 0;">
+            <div class="matName"><b>Botina</b> <span class="muted">(adicione quantos tamanhos precisar)</span></div>
+            <div></div>
+          </div>
+
+          <div class="botinaAddRow">
+            <input value="${esc(botinaTamInput)}" placeholder="Tamanho (35–44)" inputmode="numeric"
+                   oninput="onBotinaTamInput(this.value)">
+            <input type="number" min="0" step="1" value="${Number(botinaQtdInput||0)}"
+                   oninput="onBotinaQtdInput(this.value)"
+                   placeholder="Qtd">
+            <button onclick="addBotina()">+ Adicionar tamanho</button>
+          </div>
+
+          <div>${rows || `<div class="muted" style="margin-top:6px;">Nenhum tamanho adicionado.</div>`}</div>
         </div>
       `;
     }
 
+    const qtd = Number(formEPIs[epi] || 0);
     return `
-      <div class="epiRow">
+      <div class="qtyRow">
         <div class="matName">${esc(epi)}</div>
         <input type="number" min="0" step="1" value="${qtd}"
                oninput="onEpiQtyChange('${encodeURIComponent(epi)}', this.value)"
@@ -847,7 +858,6 @@ function renderEPIs(){
 
   document.getElementById("listaEPIs").innerHTML = fixosHtml;
 
-  // outros (4)
   const outrosHtml = formOutrosEPIs.map((it, idx)=>{
     return `
       <div class="othersRow">
@@ -870,8 +880,51 @@ function onEpiQtyChange(encEpi, v){
   formEPIs[epi] = n;
 }
 
-function onBotinaTamChange(v){
-  botinaTam = String(v || "").trim();
+function onBotinaTamInput(v){
+  botinaTamInput = String(v||"").trim();
+}
+function onBotinaQtdInput(v){
+  botinaQtdInput = Math.max(0, parseInt(v||"0", 10) || 0);
+}
+function onBotinaQtdChange(i, v){
+  const n = Math.max(0, parseInt(v||"0", 10) || 0);
+  if(botinaItens[i]) botinaItens[i].qtd = n;
+}
+function removerBotina(i){
+  botinaItens.splice(i, 1);
+  renderEPIs();
+}
+function addBotina(){
+  const tam = onlyDigits(botinaTamInput);
+  const qtd = Math.max(0, parseInt(botinaQtdInput||"0", 10) || 0);
+
+  if(!tam){
+    document.getElementById("saveStatusEPIs").innerText = "Botina: informe o tamanho.";
+    return;
+  }
+  const t = Number(tam);
+  if(!(t >= 35 && t <= 44)){
+    document.getElementById("saveStatusEPIs").innerText = "Botina: tamanho fora do padrão (35–44).";
+    return;
+  }
+  if(qtd <= 0){
+    document.getElementById("saveStatusEPIs").innerText = "Botina: informe a quantidade (> 0).";
+    return;
+  }
+
+  // se já existe, soma
+  const idx = botinaItens.findIndex(x => String(x.tam) === String(t));
+  if(idx >= 0){
+    botinaItens[idx].qtd = Number(botinaItens[idx].qtd||0) + qtd;
+  }else{
+    botinaItens.push({ tam: String(t), qtd });
+    botinaItens.sort((a,b)=> Number(a.tam) - Number(b.tam));
+  }
+
+  botinaTamInput = "";
+  botinaQtdInput = 0;
+  document.getElementById("saveStatusEPIs").innerText = "";
+  renderEPIs();
 }
 
 function onOutroEpiNomeChange(i, v){
@@ -890,35 +943,29 @@ async function salvarEPIs(){
 
   const dataRef = ctx.dataRef || "";
 
-  // monta itens fixos + botina
   const itens = [];
-  EPIS_FIXOS.forEach(epi=>{
-    const qtd = Number(formEPIs[epi] || 0);
-    if(qtd <= 0) return;
 
-    if(epi === "Botina"){
-      if(!String(botinaTam||"").trim()){
-        document.getElementById("saveStatusEPIs").innerText = "Botina: informe o tamanho.";
-        return;
-      }
-      itens.push({ epi, un: qtd, tamanho: String(botinaTam||"").trim() });
-    }else{
-      itens.push({ epi, un: qtd });
+  // fixos (exceto Botina)
+  EPIS_FIXOS.forEach(epi=>{
+    if(epi === "Botina") return;
+    const qtd = Number(formEPIs[epi] || 0);
+    if(qtd > 0) itens.push({ epi, un: qtd });
+  });
+
+  // Botina: vários tamanhos
+  botinaItens.forEach(it=>{
+    const qtd = Number(it.qtd||0);
+    const tam = String(it.tam||"").trim();
+    if(tam && qtd > 0){
+      itens.push({ epi:"Botina", tamanho: tam, un: qtd });
     }
   });
 
-  // se botina faltou tamanho e foi solicitada, já retornou acima, mas garante:
-  if(Number(formEPIs["Botina"]||0) > 0 && !String(botinaTam||"").trim()){
-    return;
-  }
-
-  // outros (4)
   const outros = formOutrosEPIs.map(o=>({
     nome: String(o.nome||"").trim(),
     un: Math.max(0, parseInt(o.qtd||0, 10) || 0)
   }));
 
-  // valida: pelo menos 1 item
   const hasOutros = outros.some(o => o.nome && o.un > 0);
   if(!itens.length && !hasOutros){
     document.getElementById("saveStatusEPIs").innerText =
@@ -943,7 +990,9 @@ async function salvarEPIs(){
 
   // zera após salvar
   EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
-  botinaTam = "";
+  botinaItens = [];
+  botinaTamInput = "";
+  botinaQtdInput = 0;
   formOutrosEPIs = [
     { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
   ];
