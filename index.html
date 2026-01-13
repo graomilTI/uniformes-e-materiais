@@ -20,25 +20,11 @@
     .col{ flex:1; min-width:220px; }
 
     .pill{ display:inline-block; padding:4px 10px; background:#e0f2fe; border-radius:999px; font-size:12px; margin-top:6px; }
-
     .topbar{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
     .logoutBtn{ width:auto; padding:9px 14px; border-radius:999px; background:#111827; }
 
     .list{ margin-top:10px; }
 
-    .item{
-      display:grid;
-      grid-template-columns: 1fr 220px;
-      gap:10px;
-      align-items:center;
-      padding:10px 0;
-      border-bottom:1px solid #f3f4f6;
-    }
-    .item:last-child{ border-bottom:none; }
-    .nm{ font-weight:800; font-size:13px; }
-    .sub{ font-size:11px; color:#6b7280; margin-top:2px; }
-
-    /* ✅ Cabeçalho/Separador por Supervisão */
     .supHeader{
       margin-top:12px;
       padding:10px 12px;
@@ -61,7 +47,8 @@
     .bottomBar .inner{ max-width:1100px; margin:auto; display:flex; gap:10px; flex-wrap:wrap; }
     .bottomBar .inner button{ width:auto; min-width:160px; }
 
-    .pdfArea a{ display:inline-block; margin-top:8px; font-weight:800; color:#166534; text-decoration:none; }
+    .pdfArea a{ display:inline-block; margin-top:8px; font-weight:900; color:#166534; text-decoration:none; }
+    .pdfArea .muted{ margin-top:6px; }
 
     .menuGrid{
       display:grid;
@@ -78,15 +65,10 @@
       text-align:left;
       box-shadow:0 1px 3px rgba(0,0,0,.06);
     }
-    .menuBtn .small{
-      display:block;
-      font-weight:600;
-      opacity:.9;
-      margin-top:6px;
-      font-size:12px;
-    }
+    .menuBtn .small{ display:block; font-weight:600; opacity:.9; margin-top:6px; font-size:12px; }
     .menuBtn.secondary{ background:#0f172a; }
 
+    /* linhas */
     .qtyRow{
       display:grid;
       grid-template-columns: 1fr 120px;
@@ -109,34 +91,36 @@
     }
     .othersRow:last-child{ border-bottom:none; }
 
-    .iconBtn{
-      width:42px;
-      height:42px;
-      border-radius:12px;
-      background:#374151;
-      color:#fff;
-      font-weight:900;
-    }
+    .iconBtn{ width:42px; height:42px; border-radius:12px; background:#374151; color:#fff; font-weight:900; }
 
-    /* OUTROS UNIFORMES: OUTROS fixo + tamanho fixo + unidade */
+    /* ✅ UNIFORMES: checkbox + tamanho + qtd + cor */
+    .uniRow{
+      display:grid;
+      grid-template-columns: 28px 1fr 120px 90px 110px;
+      gap:10px;
+      align-items:center;
+      padding:10px 0;
+      border-bottom:1px solid #f3f4f6;
+    }
+    .uniRow:last-child{ border-bottom:none; }
+    .uniRow .nm{ font-weight:900; font-size:13px; }
+    .uniRow .sub{ font-size:11px; color:#6b7280; margin-top:2px; }
+    .uniRow input[type="checkbox"]{ width:18px; height:18px; }
+
+    /* OUTROS UNIFORMES */
     .othersUniRow{
       display:grid;
-      grid-template-columns: 1fr 120px 120px;
+      grid-template-columns: 1fr 120px 90px 110px;
       gap:10px;
       align-items:center;
       padding:10px 0;
       border-bottom:1px solid #f3f4f6;
     }
     .othersUniRow:last-child{ border-bottom:none; }
-    .othersUniRow input[disabled], .othersUniRow select[disabled]{
-      background:#f3f4f6;
-      color:#111827;
-      opacity:1;
-      cursor:not-allowed;
-    }
+    .othersUniRow input[disabled], .othersUniRow select[disabled]{ background:#f3f4f6; color:#111827; opacity:1; cursor:not-allowed; }
     .othersUniRow input[type="number"]{ text-align:center; }
 
-    /* ✅ EPIs - Botina: tamanho + un + botão "+" NA MESMA LINHA */
+    /* ✅ EPIs - Botina */
     .botinaInlineRow{
       display:grid;
       grid-template-columns: 1fr 120px 52px;
@@ -147,14 +131,7 @@
     }
     .botinaInlineRow:last-child{ border-bottom:none; }
     .botinaInlineRow input[type="number"]{ text-align:center; }
-    .botinaPlusBtn{
-      width:52px;
-      height:42px;
-      border-radius:12px;
-      background:#166534;
-      color:#fff;
-      font-weight:900;
-    }
+    .botinaPlusBtn{ width:52px; height:42px; border-radius:12px; background:#166534; color:#fff; font-weight:900; }
 
     /* Toast */
     .toast{
@@ -173,9 +150,9 @@
 
     @media (max-width: 720px){
       .wrap{ padding:12px 10px 110px; }
-      .item{ grid-template-columns: 1fr; }
-      .col{ min-width:160px; }
       .menuGrid{ grid-template-columns: 1fr; }
+      .uniRow{ grid-template-columns: 28px 1fr; }
+      .uniRow select, .uniRow input{ grid-column: span 2; }
       .othersUniRow{ grid-template-columns: 1fr; }
       .othersRow{ grid-template-columns: 1fr; }
       .qtyRow{ grid-template-columns: 1fr; }
@@ -227,17 +204,17 @@
       <div class="menuGrid">
         <button class="menuBtn" onclick="goUniformes()">
           👕 Uniformes
-          <span class="small">Registre tamanhos por colaborador, OUTROS por tamanho e gere PDF.</span>
+          <span class="small">Selecione colaboradores, tamanho, qtd (1/2), cor (verde/cinza) e gere PDF.</span>
         </button>
 
         <button class="menuBtn secondary" onclick="goMateriais()">
           🧰 Materiais
-          <span class="small">Solicite materiais com quantidade e envie para a planilha.</span>
+          <span class="small">Solicite materiais com quantidade e gere PDF.</span>
         </button>
 
         <button class="menuBtn secondary" onclick="goEPIs()">
           🦺 EPI's
-          <span class="small">Solicite EPIs com quantidade, Botina com vários tamanhos e 4 OUTROS.</span>
+          <span class="small">Solicite EPIs com quantidade, Botina com vários tamanhos e PDF.</span>
         </button>
       </div>
     </div>
@@ -247,20 +224,36 @@
       <div class="row" style="align-items:center;">
         <div class="col">
           <h3>Uniformes</h3>
-          <div class="muted">Defina o tamanho por colaborador.</div>
+          <div class="muted">Escolha a supervisão, modo e configure por colaborador.</div>
         </div>
         <div class="col" style="max-width:220px;">
           <button class="secondary" onclick="goMenu()">⬅️ Voltar</button>
         </div>
       </div>
 
+      <div class="row" style="margin-top:10px;">
+        <div class="col">
+          <div class="muted"><b>Supervisão</b></div>
+          <select id="uniSup" onchange="onChangeSup('uniformes')"></select>
+        </div>
+        <div class="col">
+          <div class="muted"><b>Modo</b></div>
+          <select id="uniModo" onchange="onChangeModo('uniformes')">
+            <option value="NOVA" selected>Nova solicitação</option>
+            <option value="ATUALIZAR">Atualizar solicitação</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pdfArea" id="pdfAreaUniformesTop"></div>
+
       <div class="list" id="listaUniformes"></div>
 
       <h3 style="margin-top:14px;">OUTROS (novas contratações)</h3>
-      <div class="muted">Informe apenas a <b>unidade</b> por tamanho (OUTROS é fixo).</div>
+      <div class="muted">OUTROS é fixo — informe tamanho, qtd e cor.</div>
       <div class="list" id="listaOutrosUniformes"></div>
 
-      <div class="pdfArea" id="pdfArea"></div>
+      <div class="pdfArea" id="pdfAreaUniformes"></div>
       <div id="saveStatusUniformes" class="muted" style="margin-top:8px;"></div>
     </div>
 
@@ -269,12 +262,28 @@
       <div class="row" style="align-items:center;">
         <div class="col">
           <h3>Materiais</h3>
-          <div class="muted">Informe a quantidade para cada material (0 = não solicitar).</div>
+          <div class="muted">Escolha a supervisão, modo e informe quantidades (0 = não solicitar).</div>
         </div>
         <div class="col" style="max-width:220px;">
           <button class="secondary" onclick="goMenu()">⬅️ Voltar</button>
         </div>
       </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="col">
+          <div class="muted"><b>Supervisão</b></div>
+          <select id="matSup" onchange="onChangeSup('materiais')"></select>
+        </div>
+        <div class="col">
+          <div class="muted"><b>Modo</b></div>
+          <select id="matModo" onchange="onChangeModo('materiais')">
+            <option value="NOVA" selected>Nova solicitação</option>
+            <option value="ATUALIZAR">Atualizar solicitação</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pdfArea" id="pdfAreaMateriaisTop"></div>
 
       <div id="listaMateriais" class="list"></div>
 
@@ -282,6 +291,7 @@
       <div class="muted">Preencha o nome do material e a quantidade. Deixe em branco se não usar.</div>
       <div id="listaOutros" class="list"></div>
 
+      <div class="pdfArea" id="pdfAreaMateriais"></div>
       <div id="saveStatusMateriais" class="muted" style="margin-top:8px;"></div>
     </div>
 
@@ -290,12 +300,28 @@
       <div class="row" style="align-items:center;">
         <div class="col">
           <h3>EPI's</h3>
-          <div class="muted">Informe as quantidades (0 = não solicitar). Botina permite vários tamanhos.</div>
+          <div class="muted">Escolha a supervisão, modo e informe quantidades (0 = não solicitar).</div>
         </div>
         <div class="col" style="max-width:220px;">
           <button class="secondary" onclick="goMenu()">⬅️ Voltar</button>
         </div>
       </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="col">
+          <div class="muted"><b>Supervisão</b></div>
+          <select id="epiSup" onchange="onChangeSup('epis')"></select>
+        </div>
+        <div class="col">
+          <div class="muted"><b>Modo</b></div>
+          <select id="epiModo" onchange="onChangeModo('epis')">
+            <option value="NOVA" selected>Nova solicitação</option>
+            <option value="ATUALIZAR">Atualizar solicitação</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pdfArea" id="pdfAreaEPIsTop"></div>
 
       <div id="listaEPIs" class="list"></div>
 
@@ -303,6 +329,7 @@
       <div class="muted">Preencha o nome do EPI e a quantidade. Deixe em branco se não usar.</div>
       <div id="listaOutrosEPIs" class="list"></div>
 
+      <div class="pdfArea" id="pdfAreaEPIs"></div>
       <div id="saveStatusEPIs" class="muted" style="margin-top:8px;"></div>
     </div>
 
@@ -316,58 +343,47 @@
 <div id="toast" class="toast"></div>
 
 <script>
-/**
- * ✅ URL do Worker publicado (mantenha com / no final)
- */
 const API_BASE = "https://uniformes-e-materiais.tecnologia-f0c.workers.dev/";
 
 let token = localStorage.getItem("TAM_TOKEN") || "";
 let ctx = null;
 
-// uniformes (por colaborador)
-let formUniformes = {};
+// estado geral
+let selectedSup = {
+  uniformes: "",
+  materiais: "",
+  epis: ""
+};
+let modo = {
+  uniformes: "NOVA",
+  materiais: "NOVA",
+  epis: "NOVA"
+};
+let lastPedido = {
+  uniformes: null, // {pedidoId, pdfUrl, ...}
+  materiais: null,
+  epis: null
+};
+
+// uniformes
+let formUniformes = {}; // nome -> {on:true, tamanho:"M", qtd:1, cor:"VERDE"}
+let formOutrosUni = {}; // tamanho -> {qtd:0, cor:"VERDE"}
 
 // materiais
-const MATERIAIS_FIXOS = [
-  "balança",
-  "impressora de laudo",
-  "calador",
-  "kit peneiras",
-  "quarteador",
-  "micropipeta",
-  "alicate de corte"
-];
+const MATERIAIS_FIXOS = ["balança","impressora de laudo","calador","kit peneiras","quarteador","micropipeta","alicate de corte"];
 let formMateriais = {};
 let formOutros = [
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 }
+  { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
 ];
-
-// OUTROS uniformes
-let formOutrosQtd = {};
 
 // EPIs
-const EPIS_FIXOS = [
-  "Capacete",
-  "Protetor auricular",
-  "Óculos Transparente",
-  "Luva PU",
-  "Mascara PFF2",
-  "Botina"
-];
+const EPIS_FIXOS = ["Capacete","Protetor auricular","Óculos Transparente","Luva PU","Mascara PFF2","Botina"];
 let formEPIs = {};
 let botinaItens = []; // [{tam:"40", qtd:2}, ...]
 let botinaTamInput = "";
 let botinaQtdInput = 0;
-
 let formOutrosEPIs = [
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 },
-  { nome:"", qtd:0 }
+  { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
 ];
 
 function onlyDigits(s){ return String(s||"").replace(/\D/g,""); }
@@ -386,22 +402,6 @@ function isSemSup_(s){
   const raw = String(s||"").trim();
   return (!raw || normKey(raw) === normKey("SEM SUPERVISÃO"));
 }
-/** Ordena: Supervisão (A-Z, SEM SUPERVISÃO por último) + Nome (A-Z) */
-function sortColabsBySupThenName(arr){
-  return (Array.isArray(arr) ? [...arr] : []).sort((a,b)=>{
-    const saRaw = String(a?.supervisao || "").trim();
-    const sbRaw = String(b?.supervisao || "").trim();
-
-    const sa = isSemSup_(saRaw) ? "ZZZ" : normKey(saRaw);
-    const sb = isSemSup_(sbRaw) ? "ZZZ" : normKey(sbRaw);
-
-    if(sa !== sb) return sa.localeCompare(sb);
-
-    const na = normKey(a?.colaborador || "");
-    const nb = normKey(b?.colaborador || "");
-    return na.localeCompare(nb);
-  });
-}
 
 let toastTimer = null;
 function showToast(msg){
@@ -418,9 +418,7 @@ function setBusy(v){
     const el = document.getElementById(id);
     if(el) el.disabled = b;
   });
-
-  const btns = document.querySelectorAll("#bottomActions button");
-  btns.forEach(x => x.disabled = b);
+  document.querySelectorAll("#bottomActions button").forEach(x => x.disabled = b);
 }
 
 function setBottomActions(html){
@@ -454,24 +452,20 @@ function logout(){
   token = "";
   ctx = null;
 
-  formUniformes = {};
+  selectedSup = { uniformes:"", materiais:"", epis:"" };
+  modo = { uniformes:"NOVA", materiais:"NOVA", epis:"NOVA" };
+  lastPedido = { uniformes:null, materiais:null, epis:null };
 
+  formUniformes = {};
+  formOutrosUni = {};
   formMateriais = {};
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
-  formOutros = [
-    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
-  ];
-
-  formOutrosQtd = {};
+  formOutros = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
 
   formEPIs = {};
   EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
-  botinaItens = [];
-  botinaTamInput = "";
-  botinaQtdInput = 0;
-  formOutrosEPIs = [
-    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
-  ];
+  botinaItens = []; botinaTamInput=""; botinaQtdInput=0;
+  formOutrosEPIs = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
 
   document.getElementById("loginStatus").innerText = "Faça login novamente.";
   hide("app"); hide("bottomBar"); show("loginCard");
@@ -506,6 +500,26 @@ async function login(){
   await bootstrap();
 }
 
+function fillSupSelects(){
+  const sups = Array.isArray(ctx?.gestor?.supervisoesLiberadas) ? ctx.gestor.supervisoesLiberadas : [];
+  const list = sups.length ? sups : ["SEM SUPERVISÃO"];
+
+  // default: primeira
+  ["uniSup","matSup","epiSup"].forEach((id)=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = list.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  });
+
+  selectedSup.uniformes = list[0] || "SEM SUPERVISÃO";
+  selectedSup.materiais = list[0] || "SEM SUPERVISÃO";
+  selectedSup.epis = list[0] || "SEM SUPERVISÃO";
+
+  document.getElementById("uniSup").value = selectedSup.uniformes;
+  document.getElementById("matSup").value = selectedSup.materiais;
+  document.getElementById("epiSup").value = selectedSup.epis;
+}
+
 async function bootstrap(){
   setBusy(true);
   const res = await api("carregarListaRecente", {});
@@ -530,130 +544,263 @@ async function bootstrap(){
   document.getElementById("dataInfo").innerHTML =
     `<span class="pill">Data mais recente do histórico: <b>${esc(res.dataRef||"")}</b></span>`;
 
-  // uniformes default
+  fillSupSelects();
+
+  // defaults
+  const tamanhos = Array.isArray(res.tamanhos) ? res.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
   formUniformes = {};
   const cols = Array.isArray(res.colaboradores) ? res.colaboradores : [];
   cols.forEach(c=>{
-    formUniformes[c.colaborador] = { tamanho: "M", supervisao: c.supervisao || "" };
+    formUniformes[c.colaborador] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
   });
 
-  // OUTROS uniformes
-  const tamanhos = Array.isArray(res.tamanhos) ? res.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
-  formOutrosQtd = {};
-  tamanhos.forEach(t => formOutrosQtd[String(t).toUpperCase()] = 0);
+  formOutrosUni = {};
+  tamanhos.forEach(t => formOutrosUni[String(t).toUpperCase()] = { qtd:0, cor:"VERDE" });
 
-  // materiais default
-  formMateriais = {};
-  MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
+  formMateriais = {}; MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
 
-  // EPIs default
-  formEPIs = {};
-  EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
-  botinaItens = [];
-  botinaTamInput = "";
-  botinaQtdInput = 0;
-  formOutrosEPIs = [
-    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
-  ];
+  formEPIs = {}; EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
+  botinaItens=[]; botinaTamInput=""; botinaQtdInput=0;
+  formOutrosEPIs = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
+
+  // limpa áreas PDF
+  ["pdfAreaUniformesTop","pdfAreaMateriaisTop","pdfAreaEPIsTop","pdfAreaUniformes","pdfAreaMateriais","pdfAreaEPIs"]
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=""; });
 
   goMenu();
 }
 
-/** navegação */
 function goMenu(){
   show("screenMenu");
   hide("screenUniformes");
   hide("screenMateriais");
   hide("screenEPIs");
-
-  setBottomActions(`
-    <button class="secondary" onclick="bootstrap()">Recarregar</button>
-  `);
+  setBottomActions(`<button class="secondary" onclick="bootstrap()">Recarregar</button>`);
 }
 
-function goUniformes(){
-  hide("screenMenu");
-  show("screenUniformes");
-  hide("screenMateriais");
-  hide("screenEPIs");
-
+async function goUniformes(){
+  hide("screenMenu"); show("screenUniformes"); hide("screenMateriais"); hide("screenEPIs");
+  await refreshUltimoPDF('uniformes');
   renderUniformes();
-
   setBottomActions(`
     <button class="secondary" onclick="bootstrap()">Recarregar</button>
     <button onclick="salvarUniformes()">Salvar e Gerar PDF</button>
   `);
 }
 
-function goMateriais(){
-  hide("screenMenu");
-  hide("screenUniformes");
-  show("screenMateriais");
-  hide("screenEPIs");
-
+async function goMateriais(){
+  hide("screenMenu"); hide("screenUniformes"); show("screenMateriais"); hide("screenEPIs");
+  await refreshUltimoPDF('materiais');
   renderMateriais();
-
   setBottomActions(`
     <button class="secondary" onclick="bootstrap()">Recarregar</button>
-    <button onclick="salvarMateriais()">Enviar Solicitação</button>
+    <button onclick="salvarMateriais()">Salvar e Gerar PDF</button>
   `);
 }
 
-function goEPIs(){
-  hide("screenMenu");
-  hide("screenUniformes");
-  hide("screenMateriais");
-  show("screenEPIs");
-
+async function goEPIs(){
+  hide("screenMenu"); hide("screenUniformes"); hide("screenMateriais"); show("screenEPIs");
+  await refreshUltimoPDF('epis');
   renderEPIs();
-
   setBottomActions(`
     <button class="secondary" onclick="bootstrap()">Recarregar</button>
-    <button onclick="salvarEPIs()">Enviar Solicitação</button>
+    <button onclick="salvarEPIs()">Salvar e Gerar PDF</button>
   `);
 }
 
-/** UNIFORMES (✅ ordena por supervisão -> nome + separador por supervisão) */
+function onChangeSup(tipo){
+  if(tipo==="uniformes") selectedSup.uniformes = document.getElementById("uniSup").value;
+  if(tipo==="materiais") selectedSup.materiais = document.getElementById("matSup").value;
+  if(tipo==="epis") selectedSup.epis = document.getElementById("epiSup").value;
+  onChangeModo(tipo);
+}
+
+async function onChangeModo(tipo){
+  if(tipo==="uniformes") modo.uniformes = document.getElementById("uniModo").value;
+  if(tipo==="materiais") modo.materiais = document.getElementById("matModo").value;
+  if(tipo==="epis") modo.epis = document.getElementById("epiModo").value;
+
+  if((tipo==="uniformes" && modo.uniformes==="ATUALIZAR") ||
+     (tipo==="materiais" && modo.materiais==="ATUALIZAR") ||
+     (tipo==="epis" && modo.epis==="ATUALIZAR")){
+    await carregarUltimoPedido(tipo);
+  }else{
+    // NOVA: não precisa puxar
+    await refreshUltimoPDF(tipo);
+  }
+
+  if(tipo==="uniformes") renderUniformes();
+  if(tipo==="materiais") renderMateriais();
+  if(tipo==="epis") renderEPIs();
+}
+
+async function carregarUltimoPedido(tipo){
+  if(!ctx) return;
+
+  const sup = tipo==="uniformes" ? selectedSup.uniformes : (tipo==="materiais" ? selectedSup.materiais : selectedSup.epis);
+  setBusy(true);
+  const res = await api("carregarUltimoPedido", { payload:{ tipo, supervisao: sup } });
+  setBusy(false);
+
+  if(!res || !res.ok){
+    showToast(res?.error || "Não foi possível carregar o último pedido.");
+    await refreshUltimoPDF(tipo);
+    return;
+  }
+
+  lastPedido[tipo] = res.last || null;
+
+  // aplica no formulário
+  if(tipo==="uniformes"){
+    const data = res.last?.data || null;
+    if(data){
+      // reset somente da supervisão selecionada
+      (data.itens||[]).forEach(it=>{
+        if(!formUniformes[it.colaborador]) return;
+        formUniformes[it.colaborador].on = true;
+        formUniformes[it.colaborador].tamanho = (it.tamanho||"M").toUpperCase();
+        formUniformes[it.colaborador].qtd = Number(it.qtd||1)||1;
+        formUniformes[it.colaborador].cor = (it.cor||"VERDE").toUpperCase();
+      });
+      const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
+      tamanhos.forEach(t=>{
+        const T = String(t).toUpperCase();
+        const x = (data.outros||{})[T];
+        if(x){
+          formOutrosUni[T] = { qtd:Number(x.qtd||0)||0, cor:(x.cor||"VERDE").toUpperCase() };
+        }else{
+          formOutrosUni[T] = { qtd:0, cor:"VERDE" };
+        }
+      });
+    }
+  }
+
+  if(tipo==="materiais"){
+    const data = res.last?.data || null;
+    if(data){
+      // zera
+      MATERIAIS_FIXOS.forEach(m=> formMateriais[m]=0);
+      formOutros = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
+
+      // aplica
+      const itens = data.itens||[];
+      let outrosIdx = 0;
+      itens.forEach(it=>{
+        const nome = String(it.material||"").trim();
+        const qtd = Number(it.un||0)||0;
+        const found = MATERIAIS_FIXOS.find(x=> normKey(x)===normKey(nome));
+        if(found){
+          formMateriais[found] = qtd;
+        }else if(outrosIdx < formOutros.length){
+          formOutros[outrosIdx] = { nome, qtd };
+          outrosIdx++;
+        }
+      });
+    }
+  }
+
+  if(tipo==="epis"){
+    const data = res.last?.data || null;
+    if(data){
+      // zera
+      EPIS_FIXOS.forEach(e=> formEPIs[e]=0);
+      botinaItens=[]; botinaTamInput=""; botinaQtdInput=0;
+      formOutrosEPIs = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
+
+      const itens = data.itens||[];
+      const outros = data.outros||[];
+
+      itens.forEach(it=>{
+        if(normKey(it.epi)==="BOTINA"){
+          if(it.tamanho){
+            botinaItens.push({ tam:String(it.tamanho), qtd:Number(it.un||0)||0 });
+          }else{
+            formEPIs["Botina"] = Number(it.un||0)||0;
+          }
+        }else{
+          const key = EPIS_FIXOS.find(x=> normKey(x)===normKey(it.epi));
+          if(key) formEPIs[key] = Number(it.un||0)||0;
+        }
+      });
+
+      outros.slice(0,4).forEach((o,i)=>{
+        formOutrosEPIs[i] = { nome:String(o.nome||""), qtd:Number(o.un||0)||0 };
+      });
+    }
+  }
+
+  await refreshUltimoPDF(tipo);
+}
+
+async function refreshUltimoPDF(tipo){
+  const sup = tipo==="uniformes" ? selectedSup.uniformes : (tipo==="materiais" ? selectedSup.materiais : selectedSup.epis);
+  const res = await api("carregarUltimoPDF", { payload:{ tipo, supervisao: sup } });
+  const pdfUrl = res?.ok ? (res.pdfUrl||"") : "";
+
+  const targetTop = tipo==="uniformes" ? "pdfAreaUniformesTop" : (tipo==="materiais" ? "pdfAreaMateriaisTop" : "pdfAreaEPIsTop");
+  const el = document.getElementById(targetTop);
+  if(!el) return;
+
+  if(pdfUrl){
+    el.innerHTML = `<a href="${esc(pdfUrl)}" target="_blank">📄 Último PDF desta supervisão</a>
+                    <div class="muted">Se estiver em modo Atualizar, ao salvar ele substitui o último pedido.</div>`;
+  }else{
+    el.innerHTML = `<div class="muted">Nenhum PDF encontrado para esta supervisão.</div>`;
+  }
+}
+
+/* ==========================
+   UNIFORMES
+========================== */
 function renderUniformes(){
   const colsRaw = Array.isArray(ctx?.colaboradores) ? ctx.colaboradores : [];
-  const cols = sortColabsBySupThenName(colsRaw);
+  const supSel = String(selectedSup.uniformes||"").trim();
+
+  const cols = colsRaw
+    .filter(c=>{
+      const s = String(c.supervisao||"").trim() || "SEM SUPERVISÃO";
+      return normKey(s) === normKey(supSel || "SEM SUPERVISÃO");
+    })
+    .sort((a,b)=> normKey(a.colaborador).localeCompare(normKey(b.colaborador)));
+
   const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
 
-  document.getElementById("pdfArea").innerHTML = "";
+  document.getElementById("pdfAreaUniformes").innerHTML = "";
   document.getElementById("saveStatusUniformes").innerText = "";
 
   if(!cols.length){
     document.getElementById("listaUniformes").innerHTML =
-      `<div class="muted">Nenhum colaborador encontrado para este gestor.</div>`;
+      `<div class="muted">Nenhum colaborador encontrado para esta supervisão.</div>`;
   }else{
-    let lastSupKey = null;
-
     const html = cols.map(c=>{
       const nome = c.colaborador;
-      const sup = String(c.supervisao || "").trim();
-      const supLabel = sup || "SEM SUPERVISÃO";
+      if(!formUniformes[nome]) formUniformes[nome] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
 
-      const supKey = isSemSup_(supLabel) ? "ZZZ" : normKey(supLabel);
-      const showHeader = (supKey !== lastSupKey);
-      lastSupKey = supKey;
-
-      const val = (formUniformes[nome]?.tamanho || "M").toUpperCase();
+      const valT = (formUniformes[nome].tamanho||"M").toUpperCase();
+      const valQ = Number(formUniformes[nome].qtd||1)||1;
+      const valC = (formUniformes[nome].cor||"VERDE").toUpperCase();
+      const on   = !!formUniformes[nome].on;
 
       return `
-        ${showHeader ? `
-          <div class="supHeader">
-            ${esc(supLabel)}
-            <small>Colaboradores desta supervisão</small>
-          </div>
-        ` : ""}
-
-        <div class="item">
+        <div class="uniRow">
+          <input type="checkbox" ${on?"checked":""} onchange="onUniToggle('${encodeURIComponent(nome)}', this.checked)">
           <div>
             <div class="nm">${esc(nome)}</div>
-            <div class="sub">Supervisão: ${esc(supLabel)}</div>
+            <div class="sub">Supervisão: ${esc(supSel||"SEM SUPERVISÃO")}</div>
           </div>
+
           <select onchange="onUniformSizeChange('${encodeURIComponent(nome)}', this.value)">
-            ${tamanhos.map(t=>`<option ${String(t).toUpperCase()===val?"selected":""}>${esc(String(t).toUpperCase())}</option>`).join("")}
+            ${tamanhos.map(t=>`<option ${String(t).toUpperCase()===valT?"selected":""}>${esc(String(t).toUpperCase())}</option>`).join("")}
+          </select>
+
+          <select onchange="onUniformQtdChange('${encodeURIComponent(nome)}', this.value)">
+            <option value="1" ${valQ===1?"selected":""}>1</option>
+            <option value="2" ${valQ===2?"selected":""}>2</option>
+          </select>
+
+          <select onchange="onUniformCorChange('${encodeURIComponent(nome)}', this.value)">
+            <option value="VERDE" ${valC==="VERDE"?"selected":""}>Verde</option>
+            <option value="CINZA" ${valC==="CINZA"?"selected":""}>Cinza</option>
           </select>
         </div>
       `;
@@ -662,17 +809,29 @@ function renderUniformes(){
     document.getElementById("listaUniformes").innerHTML = html;
   }
 
+  // OUTROS
   const outrosHtml = tamanhos.map((t)=>{
     const T = String(t).toUpperCase();
-    const qtd = Number(formOutrosQtd?.[T] || 0);
+    if(!formOutrosUni[T]) formOutrosUni[T] = { qtd:0, cor:"VERDE" };
+
+    const qtd = Number(formOutrosUni[T].qtd||0)||0;
+    const cor = (formOutrosUni[T].cor||"VERDE").toUpperCase();
 
     return `
       <div class="othersUniRow">
         <input value="OUTROS" disabled>
         <select disabled><option selected>${esc(T)}</option></select>
-        <input type="number" min="0" step="1" value="${qtd}"
-               oninput="onOutroQtdChangeUniforme('${encodeURIComponent(T)}', this.value)"
-               placeholder="Un">
+
+        <select onchange="onOutroQtdChangeUniforme('${encodeURIComponent(T)}', this.value)">
+          <option value="0" ${qtd===0?"selected":""}>0</option>
+          <option value="1" ${qtd===1?"selected":""}>1</option>
+          <option value="2" ${qtd===2?"selected":""}>2</option>
+        </select>
+
+        <select onchange="onOutroCorChangeUniforme('${encodeURIComponent(T)}', this.value)">
+          <option value="VERDE" ${cor==="VERDE"?"selected":""}>Verde</option>
+          <option value="CINZA" ${cor==="CINZA"?"selected":""}>Cinza</option>
+        </select>
       </div>
     `;
   }).join("");
@@ -680,16 +839,41 @@ function renderUniformes(){
   document.getElementById("listaOutrosUniformes").innerHTML = outrosHtml;
 }
 
+function onUniToggle(encNome, v){
+  const nome = decodeURIComponent(encNome);
+  if(!formUniformes[nome]) formUniformes[nome] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
+  formUniformes[nome].on = !!v;
+}
+
 function onUniformSizeChange(encNome, val){
   const nome = decodeURIComponent(encNome);
-  if(!formUniformes[nome]) formUniformes[nome] = {};
+  if(!formUniformes[nome]) formUniformes[nome] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
   formUniformes[nome].tamanho = String(val||"M").toUpperCase();
+}
+function onUniformQtdChange(encNome, val){
+  const nome = decodeURIComponent(encNome);
+  if(!formUniformes[nome]) formUniformes[nome] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
+  const n = (String(val)==="2") ? 2 : 1;
+  formUniformes[nome].qtd = n;
+}
+function onUniformCorChange(encNome, val){
+  const nome = decodeURIComponent(encNome);
+  if(!formUniformes[nome]) formUniformes[nome] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
+  const c = (String(val).toUpperCase()==="CINZA") ? "CINZA" : "VERDE";
+  formUniformes[nome].cor = c;
 }
 
 function onOutroQtdChangeUniforme(encT, v){
   const t = decodeURIComponent(encT);
-  const n = Math.max(0, parseInt(v || "0", 10) || 0);
-  formOutrosQtd[t] = n;
+  const n = (String(v)==="2") ? 2 : (String(v)==="1" ? 1 : 0);
+  if(!formOutrosUni[t]) formOutrosUni[t] = { qtd:0, cor:"VERDE" };
+  formOutrosUni[t].qtd = n;
+}
+function onOutroCorChangeUniforme(encT, v){
+  const t = decodeURIComponent(encT);
+  const c = (String(v).toUpperCase()==="CINZA") ? "CINZA" : "VERDE";
+  if(!formOutrosUni[t]) formOutrosUni[t] = { qtd:0, cor:"VERDE" };
+  formOutrosUni[t].cor = c;
 }
 
 function b64ToBlob(b64, mime){
@@ -699,11 +883,10 @@ function b64ToBlob(b64, mime){
   for(let i=0;i<len;i++) bytes[i] = bin.charCodeAt(i);
   return new Blob([bytes], { type: mime || "application/pdf" });
 }
-
 function autoDownloadBlob(url, filename){
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename || "Relacao_Tamanhos.pdf";
+  a.download = filename || "Pedido.pdf";
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -713,36 +896,52 @@ async function salvarUniformes(){
   if(!ctx) return;
 
   const dataRef = ctx.dataRef;
-  const cols = Array.isArray(ctx.colaboradores) ? ctx.colaboradores : [];
+  const supSel = String(selectedSup.uniformes||"").trim() || "SEM SUPERVISÃO";
+  const modoSel = modo.uniformes;
+
+  const colsRaw = Array.isArray(ctx.colaboradores) ? ctx.colaboradores : [];
+  const cols = colsRaw.filter(c => normKey(String(c.supervisao||"")||"SEM SUPERVISÃO") === normKey(supSel));
+
+  const itens = cols
+    .filter(c=>{
+      const nome = c.colaborador;
+      return !!(formUniformes[nome]?.on);
+    })
+    .map(c=>{
+      const nome = c.colaborador;
+      return {
+        colaborador: nome,
+        supervisao: supSel,
+        tamanho: (formUniformes[nome]?.tamanho || "M").toUpperCase(),
+        qtd: Number(formUniformes[nome]?.qtd || 1) || 1,
+        cor: (formUniformes[nome]?.cor || "VERDE").toUpperCase()
+      };
+    });
+
   const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
-
-  if(!cols.length){
-    alert("Nenhum colaborador na lista.");
-    return;
-  }
-
-  const itens = cols.map(c=>{
-    const nome = c.colaborador;
-    return {
-      colaborador: nome,
-      supervisao: c.supervisao || "",
-      // coordenacao: c.coordenacao || "",
-      tamanho: (formUniformes[nome]?.tamanho || "M").toUpperCase()
-    };
-  });
-
   const outros = {};
   tamanhos.forEach(t=>{
     const T = String(t).toUpperCase();
-    const qtd = Number(formOutrosQtd?.[T] || 0);
-    if(qtd > 0) outros[T] = qtd;
+    const q = Number(formOutrosUni?.[T]?.qtd || 0) || 0;
+    if(q > 0){
+      outros[T] = { qtd:q, cor:(formOutrosUni?.[T]?.cor || "VERDE").toUpperCase() };
+    }
   });
+
+  if(!itens.length && Object.keys(outros).length===0){
+    document.getElementById("saveStatusUniformes").innerText = "Selecione ao menos 1 colaborador ou OUTROS.";
+    return;
+  }
 
   setBusy(true);
   document.getElementById("saveStatusUniformes").innerText = "Salvando e gerando PDF...";
-  document.getElementById("pdfArea").innerHTML = "";
+  document.getElementById("pdfAreaUniformes").innerHTML = "";
 
-  const res = await api("salvarTamanhos", { payload: { dataRef, itens, outros } });
+  const pedidoId = (modoSel==="ATUALIZAR" && lastPedido.uniformes?.pedidoId) ? lastPedido.uniformes.pedidoId : "";
+  const res = await api("salvarTamanhos", {
+    payload: { dataRef, supervisao: supSel, modo: modoSel, pedidoId, itens, outros }
+  });
+
   setBusy(false);
 
   if(!res || !res.ok){
@@ -751,7 +950,7 @@ async function salvarUniformes(){
   }
 
   document.getElementById("saveStatusUniformes").innerText =
-    `✅ Salvo! Linhas gravadas: ${res.saved_colaboradores} | Supervisões: ${res.saved_supervisao}`;
+    `✅ Salvo! Pedido: ${res.pedidoId} | Linhas: ${res.saved_rows || 0}`;
 
   showToast(res.message || "Uniformes enviados com sucesso!");
 
@@ -759,25 +958,31 @@ async function salvarUniformes(){
   if(pdf.b64){
     const blob = b64ToBlob(pdf.b64, "application/pdf");
     const url = URL.createObjectURL(blob);
-    const fileName = (pdf.fileName || "Relacao_Tamanhos.pdf");
+    const fileName = (pdf.fileName || "Pedido_Uniformes.pdf");
 
-    document.getElementById("pdfArea").innerHTML = `
+    document.getElementById("pdfAreaUniformes").innerHTML = `
       <a href="${url}" download="${esc(fileName)}">⬇️ Baixar PDF</a>
+      ${pdf.driveUrl ? `<div><a href="${esc(pdf.driveUrl)}" target="_blank">📁 PDF salvo no Drive</a></div>` : ``}
       <div class="muted">Se não baixar automaticamente, clique no link.</div>
     `;
 
     autoDownloadBlob(url, fileName);
   }else{
-    document.getElementById("pdfArea").innerHTML = `<div class="muted">PDF não retornou.</div>`;
+    document.getElementById("pdfAreaUniformes").innerHTML = `<div class="muted">PDF não retornou.</div>`;
   }
 
-  tamanhos.forEach(t => formOutrosQtd[String(t).toUpperCase()] = 0);
+  // atualiza último pdf
+  await refreshUltimoPDF('uniformes');
+
   renderUniformes();
 }
 
-/** MATERIAIS */
+/* ==========================
+   MATERIAIS
+========================== */
 function renderMateriais(){
   document.getElementById("saveStatusMateriais").innerText = "";
+  document.getElementById("pdfAreaMateriais").innerHTML = "";
 
   const fixosHtml = MATERIAIS_FIXOS.map(m=>{
     const qtd = Number(formMateriais[m] || 0);
@@ -808,13 +1013,11 @@ function renderMateriais(){
 
   document.getElementById("listaOutros").innerHTML = outrosHtml;
 }
-
 function onMaterialQtyChange(encMat, v){
   const mat = decodeURIComponent(encMat);
   const n = Math.max(0, parseInt(v || "0", 10) || 0);
   formMateriais[mat] = n;
 }
-
 function onOutroNomeChange(i, v){ formOutros[i].nome = String(v || "").trim(); }
 function onOutroQtdChangeMat(i, v){ formOutros[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0); }
 function limparOutroMat(i){ formOutros[i] = { nome:"", qtd:0 }; renderMateriais(); }
@@ -823,6 +1026,9 @@ async function salvarMateriais(){
   if(!ctx) return;
 
   const dataRef = ctx.dataRef || "";
+  const supSel = String(selectedSup.materiais||"").trim() || "SEM SUPERVISÃO";
+  const modoSel = modo.materiais;
+
   const itens = [];
 
   MATERIAIS_FIXOS.forEach(m=>{
@@ -843,8 +1049,11 @@ async function salvarMateriais(){
   }
 
   setBusy(true);
-  document.getElementById("saveStatusMateriais").innerText = "Enviando solicitação...";
-  const res = await api("salvarMateriais", { payload: { dataRef, itens } });
+  document.getElementById("saveStatusMateriais").innerText = "Salvando e gerando PDF...";
+  document.getElementById("pdfAreaMateriais").innerHTML = "";
+
+  const pedidoId = (modoSel==="ATUALIZAR" && lastPedido.materiais?.pedidoId) ? lastPedido.materiais.pedidoId : "";
+  const res = await api("salvarMateriais", { payload: { dataRef, supervisao:supSel, modo:modoSel, pedidoId, itens } });
   setBusy(false);
 
   if(!res || !res.ok){
@@ -853,20 +1062,40 @@ async function salvarMateriais(){
   }
 
   document.getElementById("saveStatusMateriais").innerText =
-    `✅ Solicitação enviada! Linhas gravadas: ${res.saved || 0}`;
+    `✅ Salvo! Pedido: ${res.pedidoId} | Linhas: ${res.saved_rows || 0}`;
 
   showToast(res.message || "Materiais enviados com sucesso!");
 
+  const pdf = res.pdf || {};
+  if(pdf.b64){
+    const blob = b64ToBlob(pdf.b64, "application/pdf");
+    const url = URL.createObjectURL(blob);
+    const fileName = (pdf.fileName || "Pedido_Materiais.pdf");
+
+    document.getElementById("pdfAreaMateriais").innerHTML = `
+      <a href="${url}" download="${esc(fileName)}">⬇️ Baixar PDF</a>
+      ${pdf.driveUrl ? `<div><a href="${esc(pdf.driveUrl)}" target="_blank">📁 PDF salvo no Drive</a></div>` : ``}
+      <div class="muted">Se não baixar automaticamente, clique no link.</div>
+    `;
+    autoDownloadBlob(url, fileName);
+  }else{
+    document.getElementById("pdfAreaMateriais").innerHTML = `<div class="muted">PDF não retornou.</div>`;
+  }
+
+  // reset
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
-  formOutros = [
-    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
-  ];
+  formOutros = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
+
+  await refreshUltimoPDF('materiais');
   renderMateriais();
 }
 
-/** EPIs */
+/* ==========================
+   EPIs
+========================== */
 function renderEPIs(){
   document.getElementById("saveStatusEPIs").innerText = "";
+  document.getElementById("pdfAreaEPIs").innerHTML = "";
 
   const fixosHtml = EPIS_FIXOS.map(epi=>{
     if(epi === "Botina"){
@@ -883,7 +1112,7 @@ function renderEPIs(){
       return `
         <div style="padding:10px 0; border-bottom:1px solid #f3f4f6;">
           <div class="qtyRow" style="border-bottom:none; padding:0 0 6px 0;">
-            <div class="matName"><b>Botina</b> <span class="muted">Digite o tamanho</span></div>
+            <div class="matName"><b>Botina</b> <span class="muted">Digite o tamanho (opcional)</span></div>
             <div></div>
           </div>
 
@@ -937,42 +1166,33 @@ function onEpiQtyChange(encEpi, v){
   const n = Math.max(0, parseInt(v || "0", 10) || 0);
   formEPIs[epi] = n;
 }
-
-function onBotinaTamInput(v){
-  botinaTamInput = String(v||"").trim();
-}
-function onBotinaQtdInput(v){
-  botinaQtdInput = Math.max(0, parseInt(v||"0", 10) || 0);
-}
+function onBotinaTamInput(v){ botinaTamInput = String(v||"").trim(); }
+function onBotinaQtdInput(v){ botinaQtdInput = Math.max(0, parseInt(v||"0", 10) || 0); }
 function onBotinaQtdChange(i, v){
   const n = Math.max(0, parseInt(v||"0", 10) || 0);
   if(botinaItens[i]) botinaItens[i].qtd = n;
 }
-function removerBotina(i){
-  botinaItens.splice(i, 1);
-  renderEPIs();
-}
+function removerBotina(i){ botinaItens.splice(i, 1); renderEPIs(); }
 
 function addBotina(){
   const tam = String(botinaTamInput||"").trim();
   const qtd = Math.max(0, parseInt(botinaQtdInput||"0", 10) || 0);
 
-  if(!tam){
-    document.getElementById("saveStatusEPIs").innerText = "Botina: digite o tamanho.";
-    return;
-  }
   if(qtd <= 0){
     document.getElementById("saveStatusEPIs").innerText = "Botina: informe a unidade (> 0).";
     return;
   }
 
-  const tamKey = tam.replace(/\s+/g," ").trim();
+  // tamanho opcional
+  const tamKey = tam ? tam.replace(/\s+/g," ").trim() : "";
 
-  const idx = botinaItens.findIndex(x => String(x.tam) === tamKey);
-  if(idx >= 0){
-    botinaItens[idx].qtd = Number(botinaItens[idx].qtd||0) + qtd;
+  if(tamKey){
+    const idx = botinaItens.findIndex(x => String(x.tam) === tamKey);
+    if(idx >= 0) botinaItens[idx].qtd = Number(botinaItens[idx].qtd||0) + qtd;
+    else botinaItens.push({ tam: tamKey, qtd });
   }else{
-    botinaItens.push({ tam: tamKey, qtd });
+    // sem tamanho: soma em "Botina" fixa
+    formEPIs["Botina"] = (Number(formEPIs["Botina"]||0)||0) + qtd;
   }
 
   botinaTamInput = "";
@@ -989,20 +1209,27 @@ async function salvarEPIs(){
   if(!ctx) return;
 
   const dataRef = ctx.dataRef || "";
+  const supSel = String(selectedSup.epis||"").trim() || "SEM SUPERVISÃO";
+  const modoSel = modo.epis;
+
   const itens = [];
 
+  // fixos exceto botina
   EPIS_FIXOS.forEach(epi=>{
     if(epi === "Botina") return;
     const qtd = Number(formEPIs[epi] || 0);
     if(qtd > 0) itens.push({ epi, un: qtd });
   });
 
+  // botina "fixa" sem tamanho
+  const botinaFixa = Number(formEPIs["Botina"]||0)||0;
+  if(botinaFixa > 0) itens.push({ epi:"Botina", un: botinaFixa });
+
+  // botina por tamanho
   botinaItens.forEach(it=>{
     const qtd = Number(it.qtd||0);
     const tam = String(it.tam||"").trim();
-    if(tam && qtd > 0){
-      itens.push({ epi:"Botina", tamanho: tam, un: qtd });
-    }
+    if(tam && qtd > 0) itens.push({ epi:"Botina", tamanho: tam, un: qtd });
   });
 
   const outros = formOutrosEPIs.map(o=>({
@@ -1018,8 +1245,11 @@ async function salvarEPIs(){
   }
 
   setBusy(true);
-  document.getElementById("saveStatusEPIs").innerText = "Enviando solicitação...";
-  const res = await api("salvarEPIs", { payload: { dataRef, itens, outros } });
+  document.getElementById("saveStatusEPIs").innerText = "Salvando e gerando PDF...";
+  document.getElementById("pdfAreaEPIs").innerHTML = "";
+
+  const pedidoId = (modoSel==="ATUALIZAR" && lastPedido.epis?.pedidoId) ? lastPedido.epis.pedidoId : "";
+  const res = await api("salvarEPIs", { payload: { dataRef, supervisao:supSel, modo:modoSel, pedidoId, itens, outros } });
   setBusy(false);
 
   if(!res || !res.ok){
@@ -1028,20 +1258,36 @@ async function salvarEPIs(){
   }
 
   document.getElementById("saveStatusEPIs").innerText =
-    `✅ Solicitação enviada! Linhas gravadas: ${res.saved || 0}`;
+    `✅ Salvo! Pedido: ${res.pedidoId} | Linhas: ${res.saved_rows || 0}`;
 
   showToast(res.message || "EPI's enviados com sucesso!");
 
+  const pdf = res.pdf || {};
+  if(pdf.b64){
+    const blob = b64ToBlob(pdf.b64, "application/pdf");
+    const url = URL.createObjectURL(blob);
+    const fileName = (pdf.fileName || "Pedido_EPIs.pdf");
+
+    document.getElementById("pdfAreaEPIs").innerHTML = `
+      <a href="${url}" download="${esc(fileName)}">⬇️ Baixar PDF</a>
+      ${pdf.driveUrl ? `<div><a href="${esc(pdf.driveUrl)}" target="_blank">📁 PDF salvo no Drive</a></div>` : ``}
+      <div class="muted">Se não baixar automaticamente, clique no link.</div>
+    `;
+    autoDownloadBlob(url, fileName);
+  }else{
+    document.getElementById("pdfAreaEPIs").innerHTML = `<div class="muted">PDF não retornou.</div>`;
+  }
+
+  // reset
   EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
-  botinaItens = [];
-  botinaTamInput = "";
-  botinaQtdInput = 0;
-  formOutrosEPIs = [
-    { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
-  ];
+  botinaItens=[]; botinaTamInput=""; botinaQtdInput=0;
+  formOutrosEPIs = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
+
+  await refreshUltimoPDF('epis');
   renderEPIs();
 }
 
+/* init */
 window.onload = async ()=>{
   const pin = document.getElementById("pin");
   pin.addEventListener("input", ()=> pin.value = onlyDigits(pin.value).slice(0,4));
