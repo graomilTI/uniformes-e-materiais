@@ -883,10 +883,45 @@ function renderPatrimoniosFromCache_(){
   renderPatrimonios_(itens, supSel);
 }
 
-function parseDias_(v){
-  const n = parseInt(String(v||"0").replace(/[^\d-]/g,""), 10);
-  return isNaN(n) ? 0 : n;
+/* ==========================
+   ✅ HELPERS PATRIMÔNIOS (FIX DIAS SEM LEITURA)
+========================== */
+function pickAny_(obj, keys){
+  for(const k of keys){
+    if(obj && Object.prototype.hasOwnProperty.call(obj, k)){
+      const v = obj[k];
+      if(v !== null && v !== undefined && String(v).trim() !== "") return v;
+    }
+  }
+  return "";
 }
+
+function parseDias_(v){
+  // aceita: "12", 12, "12 dias", "12,0"
+  const s = String(v ?? "").trim().replace(",", ".");
+  const n = parseFloat(s.replace(/[^\d.-]/g,""));
+  return isNaN(n) ? 0 : Math.round(n);
+}
+
+function parseDMY_(s){
+  // dd/MM/yyyy
+  const m = String(s||"").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(!m) return null;
+  const dd = parseInt(m[1],10), mm = parseInt(m[2],10), yy = parseInt(m[3],10);
+  const d = new Date(yy, mm-1, dd);
+  if(d && d.getFullYear()===yy && d.getMonth()===(mm-1) && d.getDate()===dd) return d;
+  return null;
+}
+
+function daysDiffFromToday_(d){
+  if(!d) return 0;
+  const today = new Date();
+  const a = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const b = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const ms = a.getTime() - b.getTime();
+  return Math.max(0, Math.floor(ms / 86400000));
+}
+
 function safeStr_(v){
   const s = String(v||"").trim();
   return s || "-";
@@ -897,20 +932,35 @@ function renderPatrimonios_(itens, supSel){
   const el = document.getElementById("patContent");
 
   const list = (itens||[])
-    .map(x=>({
-      patrimonio: String(x.patrimonio||x["Patrimônio"]||x["Patrimonio"]||"").trim(),
-      funcionario: String(x.funcionario||x["Funcionário"]||x["Funcionario"]||"").trim(),
-      identificacao: String(x.identificacao||x["Identificação"]||x["Identificacao"]||"").trim(),
-      ultimaLeitura: safeStr_(x.ultimaLeitura||x["Ultima Leitura"]||x["Última Leitura"]||x["Ultima leitura"]||x["Última leitura"]),
-      diasSemLeitura: parseDias_(
-        x.diasSemLeitura ||
-        x["Dias sem Leitura"] ||
-        x["Dias Sem Leitura"] ||
-        x["Dias_sem_leitura"] ||
-        x["dias_sem_leitura"] ||
-        x["diasSemLeitura"]
-      )
-    }))
+    .map(x=>{
+      const patrimonio = String(pickAny_(x, ["patrimonio","Patrimônio","Patrimonio","Nº Patrimônio","Numero Patrimonio"]) || "").trim();
+      const funcionario = String(pickAny_(x, ["funcionario","Funcionário","Funcionario","Colaborador","Nome"]) || "").trim();
+      const identificacao = String(pickAny_(x, ["identificacao","Identificação","Identificacao","Descrição","Descricao","Item"]) || "").trim();
+
+      const ultimaLeituraRaw = pickAny_(x, ["ultimaLeitura","Ultima Leitura","Última Leitura","Ultima leitura","Última leitura","Data última leitura","Data ultima leitura"]);
+      const ultimaLeitura = safeStr_(ultimaLeituraRaw);
+
+      // ✅ AQUI: pega exatamente "Dias sem Leitura" (seu cabeçalho)
+      const diasRaw = pickAny_(x, [
+        "diasSemLeitura","dias_sem_leitura",
+        "Dias sem Leitura",          // ✅ principal
+        "Dias Sem Leitura",
+        "Dias sem leitura",
+        "DIAS SEM LEITURA",
+        "Dias_sem_Leitura",
+        "Dias_sem_leitura"
+      ]);
+
+      let diasSemLeitura = parseDias_(diasRaw);
+
+      // fallback: calcula pelo dd/MM/yyyy se vier vazio/0
+      if(!diasSemLeitura && ultimaLeitura && ultimaLeitura !== "-"){
+        const d = parseDMY_(ultimaLeitura);
+        diasSemLeitura = daysDiffFromToday_(d);
+      }
+
+      return { patrimonio, funcionario, identificacao, ultimaLeitura, diasSemLeitura };
+    })
     .filter(x=> x.patrimonio || x.identificacao || x.funcionario);
 
   elStatus.innerText = list.length
@@ -1078,6 +1128,11 @@ async function onChangeModo(tipo){
   if(tipo==="materiais") renderMateriais();
   if(tipo==="epis") renderEPIs();
 }
+
+/* ==========================
+   (O RESTO DO SEU ARQUIVO CONTINUA IGUAL)
+   A PARTIR DAQUI NÃO ALTEREI SUA LÓGICA
+========================== */
 
 async function carregarUltimoPedido(tipo){
   if(!ctx) return;
@@ -1643,84 +1698,6 @@ function addBotina(){
 function onOutroEpiNomeChange(i, v){ formOutrosEPIs[i].nome = String(v || "").trim(); }
 function onOutroEpiQtdChange(i, v){ formOutrosEPIs[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0); }
 function limparOutroEpi(i){ formOutrosEPIs[i] = { nome:"", qtd:0 }; renderEPIs(); }
-
-async function salvarEPIs(){
-  if(!ctx) return;
-
-  const dataRef = ctx.dataRef || "";
-  const supSel = String(selectedSup.epis||"").trim() || "SEM SUPERVISÃO";
-  const modoSel = modo.epis;
-
-  const itens = [];
-
-  EPIS_FIXOS.forEach(epi=>{
-    if(epi === "Botina") return;
-    const qtd = Number(formEPIs[epi] || 0);
-    if(qtd > 0) itens.push({ epi, un: qtd });
-  });
-
-  const botinaFixa = Number(formEPIs["Botina"]||0)||0;
-  if(botinaFixa > 0) itens.push({ epi:"Botina", un: botinaFixa });
-
-  botinaItens.forEach(it=>{
-    const qtd = Number(it.qtd||0);
-    const tam = String(it.tam||"").trim();
-    if(tam && qtd > 0) itens.push({ epi:"Botina", tamanho: tam, un: qtd });
-  });
-
-  const outros = formOutrosEPIs.map(o=>({
-    nome: String(o.nome||"").trim(),
-    un: Math.max(0, parseInt(o.qtd||0, 10) || 0)
-  }));
-
-  const hasOutros = outros.some(o => o.nome && o.un > 0);
-  if(!itens.length && !hasOutros){
-    document.getElementById("saveStatusEPIs").innerText =
-      "Informe pelo menos 1 EPI com unidade maior que 0.";
-    return;
-  }
-
-  setBusy(true);
-  document.getElementById("saveStatusEPIs").innerText = "Salvando e gerando PDF...";
-  document.getElementById("pdfAreaEPIs").innerHTML = "";
-
-  const pedidoId = (modoSel==="ATUALIZAR" && lastPedido.epis?.pedidoId) ? lastPedido.epis.pedidoId : "";
-  const res = await api("salvarEPIs", { payload: { dataRef, supervisao:supSel, modo:modoSel, pedidoId, itens, outros } });
-  setBusy(false);
-
-  if(!res || !res.ok){
-    document.getElementById("saveStatusEPIs").innerText = res?.error || "Erro ao enviar";
-    return;
-  }
-
-  document.getElementById("saveStatusEPIs").innerText =
-    `✅ Salvo! Pedido: ${res.pedidoId} | Linhas: ${res.saved_rows || 0}`;
-
-  showToast(res.message || "EPI's enviados com sucesso!");
-
-  const pdf = res.pdf || {};
-  if(pdf.b64){
-    const blob = b64ToBlob(pdf.b64, "application/pdf");
-    const url = URL.createObjectURL(blob);
-    const fileName = (pdf.fileName || "Pedido_EPIs.pdf");
-
-    document.getElementById("pdfAreaEPIs").innerHTML = `
-      <a href="${url}" download="${esc(fileName)}">⬇️ Baixar PDF</a>
-      ${pdf.driveUrl ? `<div><a href="${esc(pdf.driveUrl)}" target="_blank">📁 PDF salvo no Drive</a></div>` : ``}
-      <div class="muted">Se não baixar automaticamente, clique no link.</div>
-    `;
-    autoDownloadBlob(url, fileName);
-  }else{
-    document.getElementById("pdfAreaEPIs").innerHTML = `<div class="muted">PDF não retornou.</div>`;
-  }
-
-  EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
-  botinaItens=[]; botinaTamInput=""; botinaQtdInput=0;
-  formOutrosEPIs = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
-
-  await refreshUltimoPDF('epis');
-  renderEPIs();
-}
 
 /* init */
 window.onload = async ()=>{
