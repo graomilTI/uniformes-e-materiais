@@ -241,6 +241,49 @@
     .patItem .mut{ color:#6b7280; font-size:12px; }
     .patItem .right{ text-align:right; }
 
+    /* ✅ Accordion (AGRUPADO por colaborador) */
+    .patAcc{
+      border:1px solid #e5e7eb;
+      border-radius:14px;
+      background:#fff;
+      margin-top:10px;
+      box-shadow:0 1px 3px rgba(0,0,0,.06);
+      overflow:hidden;
+    }
+    .patAcc summary{
+      list-style:none;
+      cursor:pointer;
+      padding:12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-weight:900;
+    }
+    .patAcc summary::-webkit-details-marker{ display:none; }
+    .patAcc summary .left{
+      display:flex; flex-direction:column; gap:4px;
+    }
+    .patAcc summary .meta{
+      font-weight:700;
+      font-size:12px;
+      color:#6b7280;
+    }
+    .patAcc summary .right{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      white-space:nowrap;
+    }
+    .patAcc .body{
+      padding:0 12px 12px 12px;
+    }
+    .patAcc .divider{
+      height:1px;
+      background:#f3f4f6;
+      margin:0 0 8px 0;
+    }
+
     @media (max-width: 720px){
       .wrap{ padding:12px 10px 110px; }
       .menuGrid{ grid-template-columns: 1fr; }
@@ -253,6 +296,7 @@
       .patItem{ grid-template-columns: 1fr; }
       .patItem .right{ text-align:left; }
       .seg{ max-width:none; }
+      .patAcc summary .right{ flex-wrap:wrap; justify-content:flex-end; }
     }
   </style>
 </head>
@@ -316,7 +360,7 @@
         <!-- ✅ NOVO -->
         <button class="menuBtn secondary" onclick="goPatrimonios()">
           🏷️ Patrimônios
-          <span class="small">Consulte nº, descrição, última leitura e dias sem leitura (alerta > 10).</span>
+          <span class="small">Consulte nº, descrição, última leitura e dias sem leitura (alerta &gt; 10).</span>
         </button>
       </div>
     </div>
@@ -817,8 +861,6 @@ async function loadAndRenderPatrimonios(){
   setBusy(true);
 
   // ✅ action esperada no backend:
-  // - carregarPatrimonios { payload: { supervisao } }
-  // Caso sua action tenha outro nome (ex: listarPatrimonios), troque aqui.
   const res = await api("carregarPatrimonios", { payload: { supervisao: supSel } });
 
   setBusy(false);
@@ -860,7 +902,14 @@ function renderPatrimonios_(itens, supSel){
       funcionario: String(x.funcionario||x["Funcionário"]||x["Funcionario"]||"").trim(),
       identificacao: String(x.identificacao||x["Identificação"]||x["Identificacao"]||"").trim(),
       ultimaLeitura: safeStr_(x.ultimaLeitura||x["Ultima Leitura"]||x["Última Leitura"]||x["Ultima leitura"]||x["Última leitura"]),
-      diasSemLeitura: parseDias_(x.diasSemLeitura||x["Dias sem Leitura"]||x["Dias Sem Leitura"]||x["Dias_sem_leitura"])
+      diasSemLeitura: parseDias_(
+        x.diasSemLeitura ||
+        x["Dias sem Leitura"] ||
+        x["Dias Sem Leitura"] ||
+        x["Dias_sem_leitura"] ||
+        x["dias_sem_leitura"] ||
+        x["diasSemLeitura"]
+      )
     }))
     .filter(x=> x.patrimonio || x.identificacao || x.funcionario);
 
@@ -887,7 +936,7 @@ function renderPatrimonios_(itens, supSel){
       const danger = (it.diasSemLeitura||0) > 10;
       const chip = `<span class="chip ${danger?'danger':''}">${danger ? '⚠️ ' : ''}${esc(it.diasSemLeitura)} dia(s)</span>`;
       return `
-        <tr>
+        <tr style="${danger ? 'outline:2px solid #fecaca; outline-offset:-2px;' : ''}">
           <td><b>${esc(it.patrimonio||"-")}</b></td>
           <td>${esc(it.identificacao||"-")}</td>
           <td>${esc(it.funcionario||"-")}</td>
@@ -917,7 +966,7 @@ function renderPatrimonios_(itens, supSel){
     return;
   }
 
-  // AGRUPADO
+  // ✅ AGRUPADO (minimizado/expandível)
   const grp = new Map();
   list.forEach(it=>{
     const k = it.funcionario || "SEM FUNCIONÁRIO";
@@ -937,11 +986,15 @@ function renderPatrimonios_(itens, supSel){
 
   const cards = colabs.map(c=>{
     const arr = grp.get(c.nome) || [];
-    arr.sort((a,b)=> ((b.diasSemLeitura||0) - (a.diasSemLeitura||0)) || normKey(a.patrimonio).localeCompare(normKey(b.patrimonio)));
+    arr.sort((a,b)=>
+      ((b.diasSemLeitura||0) - (a.diasSemLeitura||0)) ||
+      normKey(a.patrimonio).localeCompare(normKey(b.patrimonio))
+    );
 
     const itensHtml = arr.map(it=>{
       const danger = (it.diasSemLeitura||0) > 10;
       const chip = `<span class="chip ${danger?'danger':''}">${danger ? '⚠️ ' : ''}${esc(it.diasSemLeitura)} dia(s)</span>`;
+
       return `
         <div class="patItem">
           <div class="num">${esc(it.patrimonio||"-")}</div>
@@ -962,11 +1015,25 @@ function renderPatrimonios_(itens, supSel){
     }).join("");
 
     const headerChip = `<span class="chip ${c.maxDias>10?'danger':''}">${c.maxDias>10?'⚠️ ':''}Máx: ${esc(c.maxDias)} dia(s)</span>`;
+    const openAttr = (c.maxDias > 10) ? "open" : "";
+
     return `
-      <div class="patCard">
-        <h4>${esc(c.nome)} <span class="muted">(${c.count} itens)</span> ${headerChip}</h4>
-        ${itensHtml}
-      </div>
+      <details class="patAcc" ${openAttr}>
+        <summary>
+          <div class="left">
+            <div>👤 ${esc(c.nome)}</div>
+            <div class="meta">${esc(c.count)} item(ns)</div>
+          </div>
+          <div class="right">
+            ${headerChip}
+            <span class="chip">Clique p/ ver</span>
+          </div>
+        </summary>
+        <div class="body">
+          <div class="divider"></div>
+          ${itensHtml}
+        </div>
+      </details>
     `;
   }).join("");
 
@@ -1004,7 +1071,6 @@ async function onChangeModo(tipo){
      (tipo==="epis" && modo.epis==="ATUALIZAR")){
     await carregarUltimoPedido(tipo);
   }else{
-    // NOVA: não precisa puxar
     await refreshUltimoPDF(tipo);
   }
 
@@ -1267,6 +1333,9 @@ function autoDownloadBlob(url, filename){
   a.remove();
 }
 
+/* ==========================
+   SALVAR UNIFORMES
+========================== */
 async function salvarUniformes(){
   if(!ctx) return;
 
