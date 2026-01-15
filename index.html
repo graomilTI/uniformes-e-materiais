@@ -1019,13 +1019,9 @@ function renderOutrosEPIs(){
   }).join("");
 }
 
-/* ==========================
-   SALVAR (mantém compatível)
-   OBS: action "salvarPedido" é a mais comum no seu worker.
-   Se o seu backend usar outro action, é só trocar o nome aqui.
-========================== */
 async function salvarUniformes(){
   const sup = String(selectedSup.uniformes||"").trim() || "SEM SUPERVISÃO";
+
   const payload = {
     tipo: "uniformes",
     modo: modo.uniformes,
@@ -1034,7 +1030,6 @@ async function salvarUniformes(){
     outros: formOutrosUni
   };
 
-  // pega colaboradores da sup selecionada (na ordem)
   const list = listColsBySup_(sup).sort((a,b)=> normKey(a.colaborador).localeCompare(normKey(b.colaborador)));
   list.forEach(c=>{
     const nome = String(c?.colaborador||"").trim();
@@ -1051,12 +1046,19 @@ async function salvarUniformes(){
 
   document.getElementById("saveStatusUniformes").innerText = "Salvando...";
   setBusy(true);
+
+  // ✅ AQUI: envia dentro de payload:
   const res = await api("salvarPedido", { payload });
+
   setBusy(false);
 
   if(!res || !res.ok){
-    document.getElementById("saveStatusUniformes").innerText = res?.error || "Erro ao salvar.";
-    showToast("Erro ao salvar.");
+    const msg = res?.error || "Erro ao salvar.";
+    document.getElementById("saveStatusUniformes").innerText = msg;
+    showToast(msg);
+
+    // ✅ ajuda MUITO pra descobrir o motivo:
+    console.log("SALVAR UNIFORMES -> resposta:", res);
     return;
   }
 
@@ -1064,7 +1066,6 @@ async function salvarUniformes(){
   showToast("Salvo!");
   await refreshUltimoPDF("uniformes");
 }
-
 async function salvarMateriais(){
   const sup = String(selectedSup.materiais||"").trim() || "SEM SUPERVISÃO";
 
@@ -1084,12 +1085,16 @@ async function salvarMateriais(){
 
   document.getElementById("saveStatusMateriais").innerText = "Salvando...";
   setBusy(true);
-  const res = await api("salvarPedido", { payload });
+
+  const res = await api("salvarPedido", { payload }); // ✅
+
   setBusy(false);
 
   if(!res || !res.ok){
-    document.getElementById("saveStatusMateriais").innerText = res?.error || "Erro ao salvar.";
-    showToast("Erro ao salvar.");
+    const msg = res?.error || "Erro ao salvar.";
+    document.getElementById("saveStatusMateriais").innerText = msg;
+    showToast(msg);
+    console.log("SALVAR MATERIAIS -> resposta:", res);
     return;
   }
 
@@ -1097,26 +1102,23 @@ async function salvarMateriais(){
   showToast("Salvo!");
   await refreshUltimoPDF("materiais");
 }
-
 async function salvarEPIs(){
   const sup = String(selectedSup.epis||"").trim() || "SEM SUPERVISÃO";
 
   const itens = [];
-  // fixos sem botina
+
   EPIS_FIXOS.forEach(e=>{
     if(normKey(e)==="BOTINA") return;
     const q = Math.max(0, Number(formEPIs[e]||0));
     if(q>0) itens.push({ epi:e, un:q });
   });
 
-  // botina multi
   (botinaItens||[]).forEach(b=>{
     const t = String(b.tam||"").trim();
     const q = Math.max(0, Number(b.qtd||0));
     if(t && q>0) itens.push({ epi:"Botina", tamanho:t, un:q });
   });
 
-  // outros
   const outros = [];
   formOutrosEPIs.forEach(o=>{
     const nome = String(o.nome||"").trim();
@@ -1128,8 +1130,23 @@ async function salvarEPIs(){
 
   document.getElementById("saveStatusEPIs").innerText = "Salvando...";
   setBusy(true);
-  const res = await api("salvarPedido", { payload });
+
+  const res = await api("salvarPedido", { payload }); // ✅
+
   setBusy(false);
+
+  if(!res || !res.ok){
+    const msg = res?.error || "Erro ao salvar.";
+    document.getElementById("saveStatusEPIs").innerText = msg;
+    showToast(msg);
+    console.log("SALVAR EPIs -> resposta:", res);
+    return;
+  }
+
+  document.getElementById("saveStatusEPIs").innerText = "Salvo com sucesso.";
+  showToast("Salvo!");
+  await refreshUltimoPDF("epis");
+}
 
   if(!res || !res.ok){
     document.getElementById("saveStatusEPIs").innerText = res?.error || "Erro ao salvar.";
