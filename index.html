@@ -468,7 +468,7 @@
       <div id="saveStatusEPIs" class="muted" style="margin-top:8px;"></div>
     </div>
 
-    <!-- ✅ PATRIMÔNIOS -->
+    <!-- PATRIMÔNIOS -->
     <div id="screenPatrimonios" class="card" style="display:none;">
       <div class="row" style="align-items:center;">
         <div class="col">
@@ -560,9 +560,7 @@ function isSemSup_(s){
 }
 
 /* ==========================
-   ✅ FIX PRINCIPAL (UNIFORMES)
-   - chave normalizada para colaborador
-   - filtro por supervisão robusto
+   FIX PRINCIPAL (UNIFORMES)
 ========================== */
 function colKey_(nome){ return normKey(nome||""); }
 
@@ -728,7 +726,7 @@ async function bootstrap(){
 
   const tamanhos = Array.isArray(res.tamanhos) ? res.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
 
-  // ✅ FIX: formUniformes com chave normalizada (evita sumir colaborador)
+  // ✅ FIX: formUniformes com chave normalizada
   formUniformes = {};
   const cols = Array.isArray(res.colaboradores) ? res.colaboradores : [];
   cols.forEach(c=>{
@@ -800,7 +798,7 @@ async function goEPIs(){
 }
 
 /* ==========================
-   ✅ RENDER UNIFORMES (FIX)
+   RENDER UNIFORMES (FIX)
 ========================== */
 function renderUniformes(){
   const supSel = String(selectedSup.uniformes || "").trim() || "SEM SUPERVISÃO";
@@ -939,7 +937,6 @@ function renderEPIs(){
   const el = document.getElementById("listaEPIs");
   if(!el) return;
 
-  // fixos (exceto botina multi)
   const fixos = EPIS_FIXOS.filter(x=> normKey(x) !== "BOTINA");
   const rowsFixos = fixos.map(e=>{
     if(formEPIs[e] == null) formEPIs[e] = 0;
@@ -952,7 +949,6 @@ function renderEPIs(){
     `;
   }).join("");
 
-  // botina multi
   const botinaList = (botinaItens||[]).map((it, idx)=>{
     return `
       <div class="botinaInlineRow">
@@ -1047,7 +1043,6 @@ async function salvarUniformes(){
   document.getElementById("saveStatusUniformes").innerText = "Salvando...";
   setBusy(true);
 
-  // ✅ AQUI: envia dentro de payload:
   const res = await api("salvarPedido", { payload });
 
   setBusy(false);
@@ -1056,8 +1051,6 @@ async function salvarUniformes(){
     const msg = res?.error || "Erro ao salvar.";
     document.getElementById("saveStatusUniformes").innerText = msg;
     showToast(msg);
-
-    // ✅ ajuda MUITO pra descobrir o motivo:
     console.log("SALVAR UNIFORMES -> resposta:", res);
     return;
   }
@@ -1066,6 +1059,7 @@ async function salvarUniformes(){
   showToast("Salvo!");
   await refreshUltimoPDF("uniformes");
 }
+
 async function salvarMateriais(){
   const sup = String(selectedSup.materiais||"").trim() || "SEM SUPERVISÃO";
 
@@ -1086,7 +1080,7 @@ async function salvarMateriais(){
   document.getElementById("saveStatusMateriais").innerText = "Salvando...";
   setBusy(true);
 
-  const res = await api("salvarPedido", { payload }); // ✅
+  const res = await api("salvarPedido", { payload });
 
   setBusy(false);
 
@@ -1102,6 +1096,7 @@ async function salvarMateriais(){
   showToast("Salvo!");
   await refreshUltimoPDF("materiais");
 }
+
 async function salvarEPIs(){
   const sup = String(selectedSup.epis||"").trim() || "SEM SUPERVISÃO";
 
@@ -1131,7 +1126,7 @@ async function salvarEPIs(){
   document.getElementById("saveStatusEPIs").innerText = "Salvando...";
   setBusy(true);
 
-  const res = await api("salvarPedido", { payload }); // ✅
+  const res = await api("salvarPedido", { payload });
 
   setBusy(false);
 
@@ -1148,19 +1143,8 @@ async function salvarEPIs(){
   await refreshUltimoPDF("epis");
 }
 
-  if(!res || !res.ok){
-    document.getElementById("saveStatusEPIs").innerText = res?.error || "Erro ao salvar.";
-    showToast("Erro ao salvar.");
-    return;
-  }
-
-  document.getElementById("saveStatusEPIs").innerText = "Salvo com sucesso.";
-  showToast("Salvo!");
-  await refreshUltimoPDF("epis");
-}
-
 /* ==========================
-   PATRIMÔNIOS (igual ao seu)
+   PATRIMÔNIOS
 ========================== */
 async function goPatrimonios(){
   hide("screenMenu"); hide("screenUniformes"); hide("screenMateriais"); hide("screenEPIs"); show("screenPatrimonios");
@@ -1280,12 +1264,8 @@ function renderPatrimonios_(itens, supSel){
 
       const diasRaw = pickAny_(x, [
         "diasSemLeitura","dias_sem_leitura",
-        "Dias sem Leitura",
-        "Dias Sem Leitura",
-        "Dias sem leitura",
-        "DIAS SEM LEITURA",
-        "Dias_sem_Leitura",
-        "Dias_sem_leitura"
+        "Dias sem Leitura","Dias Sem Leitura","Dias sem leitura",
+        "DIAS SEM LEITURA","Dias_sem_Leitura","Dias_sem_leitura"
       ]);
 
       let diasSemLeitura = parseDias_(diasRaw);
@@ -1342,9 +1322,7 @@ function renderPatrimonios_(itens, supSel){
             <th style="width:14%;">Dias sem leitura</th>
           </tr>
         </thead>
-        <tbody>
-          ${rows}
-        </tbody>
+        <tbody>${rows}</tbody>
       </table>
       <div class="muted" style="margin-top:8px;">Regra: Dias sem leitura &gt; 10 = destaque vermelho.</div>
     `;
@@ -1446,7 +1424,6 @@ async function onChangeModo(tipo){
   if(tipo==="materiais") modo.materiais = document.getElementById("matModo").value;
   if(tipo==="epis") modo.epis = document.getElementById("epiModo").value;
 
-  // Se estiver ATUALIZAR, tenta carregar o último pedido
   if((tipo==="uniformes" && modo.uniformes==="ATUALIZAR") ||
      (tipo==="materiais" && modo.materiais==="ATUALIZAR") ||
      (tipo==="epis" && modo.epis==="ATUALIZAR")){
@@ -1461,8 +1438,7 @@ async function onChangeModo(tipo){
 }
 
 /* ==========================
-   CARREGAR ÚLTIMO PEDIDO (AJUSTADO)
-   - uniformes agora usa chave normalizada
+   CARREGAR ÚLTIMO PEDIDO
 ========================== */
 async function carregarUltimoPedido(tipo){
   if(!ctx) return;
