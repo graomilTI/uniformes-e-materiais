@@ -347,7 +347,6 @@
           <span class="small">Solicite EPIs com quantidade, Botina com vários tamanhos e PDF.</span>
         </button>
 
-        <!-- ✅ NOVO -->
         <button class="menuBtn secondary" onclick="goPatrimonios()">
           🏷️ Patrimônios
           <span class="small">Consulte nº, descrição, última leitura e dias sem leitura (alerta &gt; 10).</span>
@@ -469,7 +468,7 @@
       <div id="saveStatusEPIs" class="muted" style="margin-top:8px;"></div>
     </div>
 
-    <!-- ✅ PATRIMÔNIOS (NOVA TELA) -->
+    <!-- ✅ PATRIMÔNIOS -->
     <div id="screenPatrimonios" class="card" style="display:none;">
       <div class="row" style="align-items:center;">
         <div class="col">
@@ -518,47 +517,30 @@ let token = localStorage.getItem("TAM_TOKEN") || "";
 let ctx = null;
 
 // estado geral
-let selectedSup = {
-  uniformes: "",
-  materiais: "",
-  epis: "",
-  patrimonios: ""
-};
-let modo = {
-  uniformes: "NOVA",
-  materiais: "NOVA",
-  epis: "NOVA"
-};
-let lastPedido = {
-  uniformes: null,
-  materiais: null,
-  epis: null
-};
+let selectedSup = { uniformes:"", materiais:"", epis:"", patrimonios:"" };
+let modo = { uniformes:"NOVA", materiais:"NOVA", epis:"NOVA" };
+let lastPedido = { uniformes:null, materiais:null, epis:null };
 
 // Patrimônios
 let patView = "TABELA"; // TABELA | AGRUPADO
 let patCacheBySup = {}; // supNorm -> itens
 
 // uniformes
-let formUniformes = {};
-let formOutrosUni = {};
+let formUniformes = {}; // keyNorm -> {nome,on,tamanho,qtd,cor}
+let formOutrosUni = {}; // TAM -> {qtd,cor}
 
 // materiais
 const MATERIAIS_FIXOS = ["balança","impressora de laudo","calador","kit peneiras","quarteador","micropipeta","alicate de corte"];
-let formMateriais = {};
-let formOutros = [
-  { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
-];
+let formMateriais = {}; // nomeFix -> qtd
+let formOutros = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
 
 // EPIs
 const EPIS_FIXOS = ["Capacete","Protetor auricular","Óculos Transparente","Luva PU","Mascara PFF2","Botina"];
-let formEPIs = {};
-let botinaItens = [];
+let formEPIs = {}; // epiFix -> qtd (exceto botina multi)
+let botinaItens = []; // [{tam,qtd}]
 let botinaTamInput = "";
 let botinaQtdInput = 0;
-let formOutrosEPIs = [
-  { nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 },{ nome:"", qtd:0 }
-];
+let formOutrosEPIs = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
 
 function onlyDigits(s){ return String(s||"").replace(/\D/g,""); }
 function esc(s){ return String(s||"").replace(/[&<>"]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
@@ -575,6 +557,23 @@ function normKey(s){
 function isSemSup_(s){
   const raw = String(s||"").trim();
   return (!raw || normKey(raw) === normKey("SEM SUPERVISÃO"));
+}
+
+/* ==========================
+   ✅ FIX PRINCIPAL (UNIFORMES)
+   - chave normalizada para colaborador
+   - filtro por supervisão robusto
+========================== */
+function colKey_(nome){ return normKey(nome||""); }
+
+function listColsBySup_(supSel){
+  const arr = Array.isArray(ctx?.colaboradores) ? ctx.colaboradores : [];
+  const supN = normKey(supSel || "");
+  return arr.filter(c=>{
+    const s = String(c?.supervisao || "").trim();
+    if(isSemSup_(supSel)) return isSemSup_(s);
+    return normKey(s) === supN;
+  });
 }
 
 let toastTimer = null;
@@ -635,6 +634,7 @@ function logout(){
 
   formUniformes = {};
   formOutrosUni = {};
+
   formMateriais = {};
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
   formOutros = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
@@ -727,10 +727,15 @@ async function bootstrap(){
   fillSupSelects();
 
   const tamanhos = Array.isArray(res.tamanhos) ? res.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
+
+  // ✅ FIX: formUniformes com chave normalizada (evita sumir colaborador)
   formUniformes = {};
   const cols = Array.isArray(res.colaboradores) ? res.colaboradores : [];
   cols.forEach(c=>{
-    formUniformes[c.colaborador] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
+    const nome = String(c?.colaborador || "").trim();
+    if(!nome) return;
+    const k = colKey_(nome);
+    formUniformes[k] = { nome, on:true, tamanho:"M", qtd:1, cor:"VERDE" };
   });
 
   formOutrosUni = {};
@@ -765,6 +770,7 @@ async function goUniformes(){
   hide("screenMenu"); show("screenUniformes"); hide("screenMateriais"); hide("screenEPIs"); hide("screenPatrimonios");
   await refreshUltimoPDF('uniformes');
   renderUniformes();
+  renderOutrosUniformes();
   setBottomActions(`
     <button class="secondary" onclick="bootstrap()">Recarregar</button>
     <button onclick="salvarUniformes()">Salvar e Gerar PDF</button>
@@ -775,6 +781,7 @@ async function goMateriais(){
   hide("screenMenu"); hide("screenUniformes"); show("screenMateriais"); hide("screenEPIs"); hide("screenPatrimonios");
   await refreshUltimoPDF('materiais');
   renderMateriais();
+  renderOutrosMateriais();
   setBottomActions(`
     <button class="secondary" onclick="bootstrap()">Recarregar</button>
     <button onclick="salvarMateriais()">Salvar e Gerar PDF</button>
@@ -785,6 +792,7 @@ async function goEPIs(){
   hide("screenMenu"); hide("screenUniformes"); hide("screenMateriais"); show("screenEPIs"); hide("screenPatrimonios");
   await refreshUltimoPDF('epis');
   renderEPIs();
+  renderOutrosEPIs();
   setBottomActions(`
     <button class="secondary" onclick="bootstrap()">Recarregar</button>
     <button onclick="salvarEPIs()">Salvar e Gerar PDF</button>
@@ -792,15 +800,356 @@ async function goEPIs(){
 }
 
 /* ==========================
-   PATRIMÔNIOS
+   ✅ RENDER UNIFORMES (FIX)
+========================== */
+function renderUniformes(){
+  const supSel = String(selectedSup.uniformes || "").trim() || "SEM SUPERVISÃO";
+  const list = listColsBySup_(supSel);
+  const el = document.getElementById("listaUniformes");
+  if(!el) return;
+
+  if(!list.length){
+    const total = Array.isArray(ctx?.colaboradores) ? ctx.colaboradores.length : 0;
+    el.innerHTML = `
+      <div class="muted">
+        Nenhum colaborador encontrado para esta supervisão.<br>
+        <b>Sup selecionada:</b> ${esc(supSel)}<br>
+        <b>Total retornado pelo backend:</b> ${esc(total)}
+      </div>
+    `;
+    return;
+  }
+
+  const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
+  list.sort((a,b)=> normKey(a.colaborador).localeCompare(normKey(b.colaborador)));
+
+  el.innerHTML = list.map(c=>{
+    const nome = String(c?.colaborador || "").trim();
+    const sub = String(c?.supervisao || "").trim();
+    const k = colKey_(nome);
+
+    if(!formUniformes[k]){
+      formUniformes[k] = { nome, on:true, tamanho:"M", qtd:1, cor:"VERDE" };
+    }
+    const st = formUniformes[k];
+
+    return `
+      <div class="uniRow">
+        <input type="checkbox" ${st.on ? "checked":""}
+          onchange="formUniformes['${esc(k)}'].on = this.checked">
+
+        <div>
+          <div class="nm">${esc(nome)}</div>
+          <div class="sub">${esc(sub)}</div>
+        </div>
+
+        <select onchange="formUniformes['${esc(k)}'].tamanho = this.value">
+          ${tamanhos.map(t=>{
+            const T = String(t).toUpperCase();
+            const cur = String(st.tamanho||"M").toUpperCase();
+            return `<option value="${esc(T)}" ${cur===T?"selected":""}>${esc(T)}</option>`;
+          }).join("")}
+        </select>
+
+        <select onchange="formUniformes['${esc(k)}'].qtd = Number(this.value)||1">
+          ${[1,2].map(n=>`<option value="${n}" ${(Number(st.qtd||1)===n)?"selected":""}>${n}</option>`).join("")}
+        </select>
+
+        <select onchange="formUniformes['${esc(k)}'].cor = this.value">
+          ${["VERDE","CINZA"].map(cor=>{
+            const cur = String(st.cor||"VERDE").toUpperCase();
+            return `<option value="${esc(cor)}" ${cur===cor?"selected":""}>${esc(cor)}</option>`;
+          }).join("")}
+        </select>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderOutrosUniformes(){
+  const el = document.getElementById("listaOutrosUniformes");
+  if(!el) return;
+
+  const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
+  el.innerHTML = tamanhos.map(t=>{
+    const T = String(t).toUpperCase();
+    if(!formOutrosUni[T]) formOutrosUni[T] = { qtd:0, cor:"VERDE" };
+    const st = formOutrosUni[T];
+
+    return `
+      <div class="othersUniRow">
+        <div class="matName"><b>${esc(T)}</b></div>
+
+        <input type="number" min="0" step="1" value="${esc(Number(st.qtd||0))}"
+          oninput="formOutrosUni['${esc(T)}'].qtd = Math.max(0, Number(this.value)||0)">
+
+        <select onchange="formOutrosUni['${esc(T)}'].cor = this.value">
+          ${["VERDE","CINZA"].map(cor=>{
+            const cur = String(st.cor||"VERDE").toUpperCase();
+            return `<option value="${esc(cor)}" ${cur===cor?"selected":""}>${esc(cor)}</option>`;
+          }).join("")}
+        </select>
+
+        <input value="OUTROS" disabled>
+      </div>
+    `;
+  }).join("");
+}
+
+/* ==========================
+   RENDER MATERIAIS
+========================== */
+function renderMateriais(){
+  const el = document.getElementById("listaMateriais");
+  if(!el) return;
+
+  el.innerHTML = MATERIAIS_FIXOS.map(m=>{
+    if(formMateriais[m] == null) formMateriais[m] = 0;
+    return `
+      <div class="qtyRow">
+        <div class="matName">${esc(m)}</div>
+        <input type="number" min="0" step="1" value="${esc(Number(formMateriais[m]||0))}"
+          oninput="formMateriais['${esc(m)}'] = Math.max(0, Number(this.value)||0)">
+      </div>
+    `;
+  }).join("");
+}
+
+function renderOutrosMateriais(){
+  const el = document.getElementById("listaOutros");
+  if(!el) return;
+
+  el.innerHTML = formOutros.map((it, idx)=>{
+    return `
+      <div class="othersRow">
+        <input placeholder="Nome do material" value="${esc(it.nome||"")}"
+          oninput="formOutros[${idx}].nome = this.value">
+        <input type="number" min="0" step="1" value="${esc(Number(it.qtd||0))}"
+          oninput="formOutros[${idx}].qtd = Math.max(0, Number(this.value)||0)">
+        <button class="iconBtn" onclick="formOutros[${idx}]={nome:'',qtd:0}; renderOutrosMateriais();">✕</button>
+      </div>
+    `;
+  }).join("");
+}
+
+/* ==========================
+   RENDER EPIs
+========================== */
+function renderEPIs(){
+  const el = document.getElementById("listaEPIs");
+  if(!el) return;
+
+  // fixos (exceto botina multi)
+  const fixos = EPIS_FIXOS.filter(x=> normKey(x) !== "BOTINA");
+  const rowsFixos = fixos.map(e=>{
+    if(formEPIs[e] == null) formEPIs[e] = 0;
+    return `
+      <div class="qtyRow">
+        <div class="matName">${esc(e)}</div>
+        <input type="number" min="0" step="1" value="${esc(Number(formEPIs[e]||0))}"
+          oninput="formEPIs['${esc(e)}'] = Math.max(0, Number(this.value)||0)">
+      </div>
+    `;
+  }).join("");
+
+  // botina multi
+  const botinaList = (botinaItens||[]).map((it, idx)=>{
+    return `
+      <div class="botinaInlineRow">
+        <div class="matName"><b>Botina</b> — Tam ${esc(it.tam)}</div>
+        <input type="number" min="0" step="1" value="${esc(Number(it.qtd||0))}"
+          oninput="botinaItens[${idx}].qtd = Math.max(0, Number(this.value)||0)">
+        <button class="iconBtn" onclick="botinaItens.splice(${idx},1); renderEPIs();">✕</button>
+      </div>
+    `;
+  }).join("");
+
+  const botinaAdd = `
+    <div class="botinaInlineRow">
+      <input placeholder="Tamanho (ex: 38)" value="${esc(botinaTamInput||"")}"
+        oninput="botinaTamInput=this.value">
+      <input type="number" min="0" step="1" value="${esc(Number(botinaQtdInput||0))}"
+        oninput="botinaQtdInput=Math.max(0, Number(this.value)||0)">
+      <button class="botinaPlusBtn" onclick="addBotinaItem_()">＋</button>
+    </div>
+    <div class="muted">Botina: você pode adicionar vários tamanhos. (Se preferir, deixe tudo 0.)</div>
+  `;
+
+  el.innerHTML = `
+    ${rowsFixos}
+    <div class="supHeader">Botina (múltiplos tamanhos)<small>Adicione tamanhos e quantidades.</small></div>
+    ${botinaList}
+    ${botinaAdd}
+  `;
+}
+
+function addBotinaItem_(){
+  const t = String(botinaTamInput||"").trim();
+  const q = Math.max(0, Number(botinaQtdInput||0));
+  if(!t || q <= 0){
+    showToast("Informe tamanho e quantidade da botina.");
+    return;
+  }
+  const key = normKey(t);
+  const idx = botinaItens.findIndex(x=> normKey(x.tam)===key);
+  if(idx >= 0){
+    botinaItens[idx].qtd = Math.max(0, Number(botinaItens[idx].qtd||0) + q);
+  }else{
+    botinaItens.push({ tam:t, qtd:q });
+  }
+  botinaTamInput = "";
+  botinaQtdInput = 0;
+  renderEPIs();
+}
+
+function renderOutrosEPIs(){
+  const el = document.getElementById("listaOutrosEPIs");
+  if(!el) return;
+
+  el.innerHTML = formOutrosEPIs.map((it, idx)=>{
+    return `
+      <div class="othersRow">
+        <input placeholder="Nome do EPI" value="${esc(it.nome||"")}"
+          oninput="formOutrosEPIs[${idx}].nome = this.value">
+        <input type="number" min="0" step="1" value="${esc(Number(it.qtd||0))}"
+          oninput="formOutrosEPIs[${idx}].qtd = Math.max(0, Number(this.value)||0)">
+        <button class="iconBtn" onclick="formOutrosEPIs[${idx}]={nome:'',qtd:0}; renderOutrosEPIs();">✕</button>
+      </div>
+    `;
+  }).join("");
+}
+
+/* ==========================
+   SALVAR (mantém compatível)
+   OBS: action "salvarPedido" é a mais comum no seu worker.
+   Se o seu backend usar outro action, é só trocar o nome aqui.
+========================== */
+async function salvarUniformes(){
+  const sup = String(selectedSup.uniformes||"").trim() || "SEM SUPERVISÃO";
+  const payload = {
+    tipo: "uniformes",
+    modo: modo.uniformes,
+    supervisao: sup,
+    itens: [],
+    outros: formOutrosUni
+  };
+
+  // pega colaboradores da sup selecionada (na ordem)
+  const list = listColsBySup_(sup).sort((a,b)=> normKey(a.colaborador).localeCompare(normKey(b.colaborador)));
+  list.forEach(c=>{
+    const nome = String(c?.colaborador||"").trim();
+    const k = colKey_(nome);
+    const st = formUniformes[k];
+    if(!st || !st.on) return;
+    payload.itens.push({
+      colaborador: nome,
+      tamanho: String(st.tamanho||"M").toUpperCase(),
+      qtd: Number(st.qtd||1)||1,
+      cor: String(st.cor||"VERDE").toUpperCase()
+    });
+  });
+
+  document.getElementById("saveStatusUniformes").innerText = "Salvando...";
+  setBusy(true);
+  const res = await api("salvarPedido", { payload });
+  setBusy(false);
+
+  if(!res || !res.ok){
+    document.getElementById("saveStatusUniformes").innerText = res?.error || "Erro ao salvar.";
+    showToast("Erro ao salvar.");
+    return;
+  }
+
+  document.getElementById("saveStatusUniformes").innerText = "Salvo com sucesso.";
+  showToast("Salvo!");
+  await refreshUltimoPDF("uniformes");
+}
+
+async function salvarMateriais(){
+  const sup = String(selectedSup.materiais||"").trim() || "SEM SUPERVISÃO";
+
+  const itens = [];
+  MATERIAIS_FIXOS.forEach(m=>{
+    const q = Math.max(0, Number(formMateriais[m]||0));
+    if(q>0) itens.push({ material:m, un:q });
+  });
+
+  formOutros.forEach(o=>{
+    const nome = String(o.nome||"").trim();
+    const q = Math.max(0, Number(o.qtd||0));
+    if(nome && q>0) itens.push({ material:nome, un:q });
+  });
+
+  const payload = { tipo:"materiais", modo:modo.materiais, supervisao:sup, itens };
+
+  document.getElementById("saveStatusMateriais").innerText = "Salvando...";
+  setBusy(true);
+  const res = await api("salvarPedido", { payload });
+  setBusy(false);
+
+  if(!res || !res.ok){
+    document.getElementById("saveStatusMateriais").innerText = res?.error || "Erro ao salvar.";
+    showToast("Erro ao salvar.");
+    return;
+  }
+
+  document.getElementById("saveStatusMateriais").innerText = "Salvo com sucesso.";
+  showToast("Salvo!");
+  await refreshUltimoPDF("materiais");
+}
+
+async function salvarEPIs(){
+  const sup = String(selectedSup.epis||"").trim() || "SEM SUPERVISÃO";
+
+  const itens = [];
+  // fixos sem botina
+  EPIS_FIXOS.forEach(e=>{
+    if(normKey(e)==="BOTINA") return;
+    const q = Math.max(0, Number(formEPIs[e]||0));
+    if(q>0) itens.push({ epi:e, un:q });
+  });
+
+  // botina multi
+  (botinaItens||[]).forEach(b=>{
+    const t = String(b.tam||"").trim();
+    const q = Math.max(0, Number(b.qtd||0));
+    if(t && q>0) itens.push({ epi:"Botina", tamanho:t, un:q });
+  });
+
+  // outros
+  const outros = [];
+  formOutrosEPIs.forEach(o=>{
+    const nome = String(o.nome||"").trim();
+    const q = Math.max(0, Number(o.qtd||0));
+    if(nome && q>0) outros.push({ nome, un:q });
+  });
+
+  const payload = { tipo:"epis", modo:modo.epis, supervisao:sup, itens, outros };
+
+  document.getElementById("saveStatusEPIs").innerText = "Salvando...";
+  setBusy(true);
+  const res = await api("salvarPedido", { payload });
+  setBusy(false);
+
+  if(!res || !res.ok){
+    document.getElementById("saveStatusEPIs").innerText = res?.error || "Erro ao salvar.";
+    showToast("Erro ao salvar.");
+    return;
+  }
+
+  document.getElementById("saveStatusEPIs").innerText = "Salvo com sucesso.";
+  showToast("Salvo!");
+  await refreshUltimoPDF("epis");
+}
+
+/* ==========================
+   PATRIMÔNIOS (igual ao seu)
 ========================== */
 async function goPatrimonios(){
   hide("screenMenu"); hide("screenUniformes"); hide("screenMateriais"); hide("screenEPIs"); show("screenPatrimonios");
   document.getElementById("patStatus").innerText = "";
   document.getElementById("patContent").innerHTML = "";
-
   await loadAndRenderPatrimonios();
-
   setBottomActions(`
     <button class="secondary" onclick="bootstrap()">Recarregar</button>
     <button class="secondary" onclick="refreshPatrimonios()">Atualizar Patrimônios</button>
@@ -864,9 +1213,6 @@ function renderPatrimoniosFromCache_(){
   renderPatrimonios_(itens, supSel);
 }
 
-/* ==========================
-   HELPERS PATRIMÔNIOS
-========================== */
 function pickAny_(obj, keys){
   for(const k of keys){
     if(obj && Object.prototype.hasOwnProperty.call(obj, k)){
@@ -876,13 +1222,11 @@ function pickAny_(obj, keys){
   }
   return "";
 }
-
 function parseDias_(v){
   const s = String(v ?? "").trim().replace(",", ".");
   const n = parseFloat(s.replace(/[^\d.-]/g,""));
   return isNaN(n) ? 0 : Math.round(n);
 }
-
 function parseDMY_(s){
   const m = String(s||"").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if(!m) return null;
@@ -891,7 +1235,6 @@ function parseDMY_(s){
   if(d && d.getFullYear()===yy && d.getMonth()===(mm-1) && d.getDate()===dd) return d;
   return null;
 }
-
 function daysDiffFromToday_(d){
   if(!d) return 0;
   const today = new Date();
@@ -900,7 +1243,6 @@ function daysDiffFromToday_(d){
   const ms = a.getTime() - b.getTime();
   return Math.max(0, Math.floor(ms / 86400000));
 }
-
 function safeStr_(v){
   const s = String(v||"").trim();
   return s || "-";
@@ -949,7 +1291,6 @@ function renderPatrimonios_(itens, supSel){
     return;
   }
 
-  // TABELA: mantém prioridade por atraso (desc)
   if(patView === "TABELA"){
     const tableList = list.slice().sort((a,b)=>{
       const d = (b.diasSemLeitura||0) - (a.diasSemLeitura||0);
@@ -993,7 +1334,6 @@ function renderPatrimonios_(itens, supSel){
     return;
   }
 
-  /* ✅ AGRUPADO: COLABORADORES EM ORDEM ALFABÉTICA (A–Z) */
   const listForGroup = list.slice().sort((a,b)=>{
     const n = normKey(a.funcionario).localeCompare(normKey(b.funcionario));
     if(n!==0) return n;
@@ -1011,8 +1351,6 @@ function renderPatrimonios_(itens, supSel){
 
   const cards = nomes.map(nome=>{
     const arr = (grp.get(nome) || []).slice();
-
-    // itens dentro do colaborador: por maior atraso e depois patrimônio
     arr.sort((a,b)=>
       ((b.diasSemLeitura||0) - (a.diasSemLeitura||0)) ||
       normKey(a.patrimonio).localeCompare(normKey(b.patrimonio))
@@ -1083,7 +1421,6 @@ function onChangeSup(tipo){
     loadAndRenderPatrimonios();
     return;
   }
-
   onChangeModo(tipo);
 }
 
@@ -1092,6 +1429,7 @@ async function onChangeModo(tipo){
   if(tipo==="materiais") modo.materiais = document.getElementById("matModo").value;
   if(tipo==="epis") modo.epis = document.getElementById("epiModo").value;
 
+  // Se estiver ATUALIZAR, tenta carregar o último pedido
   if((tipo==="uniformes" && modo.uniformes==="ATUALIZAR") ||
      (tipo==="materiais" && modo.materiais==="ATUALIZAR") ||
      (tipo==="epis" && modo.epis==="ATUALIZAR")){
@@ -1100,16 +1438,15 @@ async function onChangeModo(tipo){
     await refreshUltimoPDF(tipo);
   }
 
-  if(tipo==="uniformes") renderUniformes();
-  if(tipo==="materiais") renderMateriais();
-  if(tipo==="epis") renderEPIs();
+  if(tipo==="uniformes"){ renderUniformes(); renderOutrosUniformes(); }
+  if(tipo==="materiais"){ renderMateriais(); renderOutrosMateriais(); }
+  if(tipo==="epis"){ renderEPIs(); renderOutrosEPIs(); }
 }
 
 /* ==========================
-   RESTO DO SEU ARQUIVO
-   (mantive igual ao que você colou)
+   CARREGAR ÚLTIMO PEDIDO (AJUSTADO)
+   - uniformes agora usa chave normalizada
 ========================== */
-
 async function carregarUltimoPedido(tipo){
   if(!ctx) return;
 
@@ -1130,12 +1467,17 @@ async function carregarUltimoPedido(tipo){
     const data = res.last?.data || null;
     if(data){
       (data.itens||[]).forEach(it=>{
-        if(!formUniformes[it.colaborador]) return;
-        formUniformes[it.colaborador].on = true;
-        formUniformes[it.colaborador].tamanho = (it.tamanho||"M").toUpperCase();
-        formUniformes[it.colaborador].qtd = Number(it.qtd||1)||1;
-        formUniformes[it.colaborador].cor = (it.cor||"VERDE").toUpperCase();
+        const nome = String(it.colaborador||"").trim();
+        const k = colKey_(nome);
+        if(!k) return;
+        if(!formUniformes[k]) formUniformes[k] = { nome, on:true, tamanho:"M", qtd:1, cor:"VERDE" };
+
+        formUniformes[k].on = true;
+        formUniformes[k].tamanho = (it.tamanho||"M").toUpperCase();
+        formUniformes[k].qtd = Number(it.qtd||1)||1;
+        formUniformes[k].cor = (it.cor||"VERDE").toUpperCase();
       });
+
       const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
       tamanhos.forEach(t=>{
         const T = String(t).toUpperCase();
@@ -1185,8 +1527,6 @@ async function carregarUltimoPedido(tipo){
         if(normKey(it.epi)==="BOTINA"){
           if(it.tamanho){
             botinaItens.push({ tam:String(it.tamanho), qtd:Number(it.un||0)||0 });
-          }else{
-            formEPIs["Botina"] = Number(it.un||0)||0;
           }
         }else{
           const key = EPIS_FIXOS.find(x=> normKey(x)===normKey(it.epi));
@@ -1203,6 +1543,9 @@ async function carregarUltimoPedido(tipo){
   await refreshUltimoPDF(tipo);
 }
 
+/* ==========================
+   ÚLTIMO PDF
+========================== */
 async function refreshUltimoPDF(tipo){
   const sup = tipo==="uniformes" ? selectedSup.uniformes : (tipo==="materiais" ? selectedSup.materiais : selectedSup.epis);
   const res = await api("carregarUltimoPDF", { payload:{ tipo, supervisao: sup } });
@@ -1220,7 +1563,6 @@ async function refreshUltimoPDF(tipo){
   }
 }
 
-/* ======= (o resto do seu código segue igual ao que você colou) ======= */
 /* init */
 window.onload = async ()=>{
   const pin = document.getElementById("pin");
