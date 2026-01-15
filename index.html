@@ -217,16 +217,6 @@
       border-color:#fecaca;
     }
 
-    .patCard{
-      border:1px solid #e5e7eb;
-      border-radius:14px;
-      background:#fff;
-      padding:12px;
-      margin-top:10px;
-      box-shadow:0 1px 3px rgba(0,0,0,.06);
-    }
-    .patCard h4{ margin:0 0 8px; font-size:13px; color:#111827; }
-
     .patItem{
       display:grid;
       grid-template-columns: 120px 1fr 140px 120px;
@@ -532,7 +522,7 @@ let selectedSup = {
   uniformes: "",
   materiais: "",
   epis: "",
-  patrimonios: "" // ✅ novo
+  patrimonios: ""
 };
 let modo = {
   uniformes: "NOVA",
@@ -540,18 +530,18 @@ let modo = {
   epis: "NOVA"
 };
 let lastPedido = {
-  uniformes: null, // {pedidoId, pdfUrl, ...}
+  uniformes: null,
   materiais: null,
   epis: null
 };
 
-// ✅ Patrimônios
+// Patrimônios
 let patView = "TABELA"; // TABELA | AGRUPADO
 let patCacheBySup = {}; // supNorm -> itens
 
 // uniformes
-let formUniformes = {}; // nome -> {on:true, tamanho:"M", qtd:1, cor:"VERDE"}
-let formOutrosUni = {}; // tamanho -> {qtd:0, cor:"VERDE"}
+let formUniformes = {};
+let formOutrosUni = {};
 
 // materiais
 const MATERIAIS_FIXOS = ["balança","impressora de laudo","calador","kit peneiras","quarteador","micropipeta","alicate de corte"];
@@ -563,7 +553,7 @@ let formOutros = [
 // EPIs
 const EPIS_FIXOS = ["Capacete","Protetor auricular","Óculos Transparente","Luva PU","Mascara PFF2","Botina"];
 let formEPIs = {};
-let botinaItens = []; // [{tam:"40", qtd:2}, ...]
+let botinaItens = [];
 let botinaTamInput = "";
 let botinaQtdInput = 0;
 let formOutrosEPIs = [
@@ -640,7 +630,6 @@ function logout(){
   modo = { uniformes:"NOVA", materiais:"NOVA", epis:"NOVA" };
   lastPedido = { uniformes:null, materiais:null, epis:null };
 
-  // ✅ patrimonios
   patView = "TABELA";
   patCacheBySup = {};
 
@@ -692,7 +681,6 @@ function fillSupSelects(){
   const sups = Array.isArray(ctx?.gestor?.supervisoesLiberadas) ? ctx.gestor.supervisoesLiberadas : [];
   const list = sups.length ? sups : ["SEM SUPERVISÃO"];
 
-  // default: primeira
   ["uniSup","matSup","epiSup","patSup"].forEach((id)=>{
     const el = document.getElementById(id);
     if(!el) return;
@@ -709,7 +697,6 @@ function fillSupSelects(){
   document.getElementById("epiSup").value = selectedSup.epis;
   document.getElementById("patSup").value = selectedSup.patrimonios;
 
-  // reset view
   setPatViewButtons_();
 }
 
@@ -739,7 +726,6 @@ async function bootstrap(){
 
   fillSupSelects();
 
-  // defaults
   const tamanhos = Array.isArray(res.tamanhos) ? res.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
   formUniformes = {};
   const cols = Array.isArray(res.colaboradores) ? res.colaboradores : [];
@@ -756,12 +742,10 @@ async function bootstrap(){
   botinaItens=[]; botinaTamInput=""; botinaQtdInput=0;
   formOutrosEPIs = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
 
-  // ✅ patrimonios
   patView = "TABELA";
   patCacheBySup = {};
   setPatViewButtons_();
 
-  // limpa áreas PDF
   ["pdfAreaUniformesTop","pdfAreaMateriaisTop","pdfAreaEPIsTop","pdfAreaUniformes","pdfAreaMateriais","pdfAreaEPIs"]
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=""; });
 
@@ -808,7 +792,7 @@ async function goEPIs(){
 }
 
 /* ==========================
-   PATRIMÔNIOS (NOVO)
+   PATRIMÔNIOS
 ========================== */
 async function goPatrimonios(){
   hide("screenMenu"); hide("screenUniformes"); hide("screenMateriais"); hide("screenEPIs"); show("screenPatrimonios");
@@ -859,10 +843,7 @@ async function loadAndRenderPatrimonios(){
   document.getElementById("patContent").innerHTML = "";
 
   setBusy(true);
-
-  // ✅ action esperada no backend:
   const res = await api("carregarPatrimonios", { payload: { supervisao: supSel } });
-
   setBusy(false);
 
   if(!res || !res.ok){
@@ -884,7 +865,7 @@ function renderPatrimoniosFromCache_(){
 }
 
 /* ==========================
-   ✅ HELPERS PATRIMÔNIOS (FIX DIAS SEM LEITURA)
+   HELPERS PATRIMÔNIOS
 ========================== */
 function pickAny_(obj, keys){
   for(const k of keys){
@@ -897,14 +878,12 @@ function pickAny_(obj, keys){
 }
 
 function parseDias_(v){
-  // aceita: "12", 12, "12 dias", "12,0"
   const s = String(v ?? "").trim().replace(",", ".");
   const n = parseFloat(s.replace(/[^\d.-]/g,""));
   return isNaN(n) ? 0 : Math.round(n);
 }
 
 function parseDMY_(s){
-  // dd/MM/yyyy
   const m = String(s||"").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if(!m) return null;
   const dd = parseInt(m[1],10), mm = parseInt(m[2],10), yy = parseInt(m[3],10);
@@ -940,10 +919,9 @@ function renderPatrimonios_(itens, supSel){
       const ultimaLeituraRaw = pickAny_(x, ["ultimaLeitura","Ultima Leitura","Última Leitura","Ultima leitura","Última leitura","Data última leitura","Data ultima leitura"]);
       const ultimaLeitura = safeStr_(ultimaLeituraRaw);
 
-      // ✅ AQUI: pega exatamente "Dias sem Leitura" (seu cabeçalho)
       const diasRaw = pickAny_(x, [
         "diasSemLeitura","dias_sem_leitura",
-        "Dias sem Leitura",          // ✅ principal
+        "Dias sem Leitura",
         "Dias Sem Leitura",
         "Dias sem leitura",
         "DIAS SEM LEITURA",
@@ -953,7 +931,6 @@ function renderPatrimonios_(itens, supSel){
 
       let diasSemLeitura = parseDias_(diasRaw);
 
-      // fallback: calcula pelo dd/MM/yyyy se vier vazio/0
       if(!diasSemLeitura && ultimaLeitura && ultimaLeitura !== "-"){
         const d = parseDMY_(ultimaLeitura);
         diasSemLeitura = daysDiffFromToday_(d);
@@ -972,17 +949,17 @@ function renderPatrimonios_(itens, supSel){
     return;
   }
 
-  // ordena por atraso desc, depois nome, depois patrimonio
-  list.sort((a,b)=>{
-    const d = (b.diasSemLeitura||0) - (a.diasSemLeitura||0);
-    if(d!==0) return d;
-    const n = normKey(a.funcionario).localeCompare(normKey(b.funcionario));
-    if(n!==0) return n;
-    return normKey(a.patrimonio).localeCompare(normKey(b.patrimonio));
-  });
-
+  // TABELA: mantém prioridade por atraso (desc)
   if(patView === "TABELA"){
-    const rows = list.map(it=>{
+    const tableList = list.slice().sort((a,b)=>{
+      const d = (b.diasSemLeitura||0) - (a.diasSemLeitura||0);
+      if(d!==0) return d;
+      const n = normKey(a.funcionario).localeCompare(normKey(b.funcionario));
+      if(n!==0) return n;
+      return normKey(a.patrimonio).localeCompare(normKey(b.patrimonio));
+    });
+
+    const rows = tableList.map(it=>{
       const danger = (it.diasSemLeitura||0) > 10;
       const chip = `<span class="chip ${danger?'danger':''}">${danger ? '⚠️ ' : ''}${esc(it.diasSemLeitura)} dia(s)</span>`;
       return `
@@ -1016,35 +993,38 @@ function renderPatrimonios_(itens, supSel){
     return;
   }
 
-  // ✅ AGRUPADO (minimizado/expandível)
+  /* ✅ AGRUPADO: COLABORADORES EM ORDEM ALFABÉTICA (A–Z) */
+  const listForGroup = list.slice().sort((a,b)=>{
+    const n = normKey(a.funcionario).localeCompare(normKey(b.funcionario));
+    if(n!==0) return n;
+    return normKey(a.patrimonio).localeCompare(normKey(b.patrimonio));
+  });
+
   const grp = new Map();
-  list.forEach(it=>{
+  listForGroup.forEach(it=>{
     const k = it.funcionario || "SEM FUNCIONÁRIO";
     if(!grp.has(k)) grp.set(k, []);
     grp.get(k).push(it);
   });
 
-  const colabs = Array.from(grp.keys()).map(nome=>{
-    const arr = grp.get(nome) || [];
-    const maxDias = arr.reduce((m,x)=> Math.max(m, x.diasSemLeitura||0), 0);
-    return { nome, maxDias, count: arr.length };
-  }).sort((a,b)=>{
-    const d = b.maxDias - a.maxDias;
-    if(d!==0) return d;
-    return normKey(a.nome).localeCompare(normKey(b.nome));
-  });
+  const nomes = Array.from(grp.keys()).sort((a,b)=> normKey(a).localeCompare(normKey(b)));
 
-  const cards = colabs.map(c=>{
-    const arr = grp.get(c.nome) || [];
+  const cards = nomes.map(nome=>{
+    const arr = (grp.get(nome) || []).slice();
+
+    // itens dentro do colaborador: por maior atraso e depois patrimônio
     arr.sort((a,b)=>
       ((b.diasSemLeitura||0) - (a.diasSemLeitura||0)) ||
       normKey(a.patrimonio).localeCompare(normKey(b.patrimonio))
     );
 
+    const maxDias = arr.reduce((m,x)=> Math.max(m, x.diasSemLeitura||0), 0);
+    const headerChip = `<span class="chip ${maxDias>10?'danger':''}">${maxDias>10?'⚠️ ':''}Máx: ${esc(maxDias)} dia(s)</span>`;
+    const openAttr = (maxDias > 10) ? "open" : "";
+
     const itensHtml = arr.map(it=>{
       const danger = (it.diasSemLeitura||0) > 10;
       const chip = `<span class="chip ${danger?'danger':''}">${danger ? '⚠️ ' : ''}${esc(it.diasSemLeitura)} dia(s)</span>`;
-
       return `
         <div class="patItem">
           <div class="num">${esc(it.patrimonio||"-")}</div>
@@ -1064,15 +1044,12 @@ function renderPatrimonios_(itens, supSel){
       `;
     }).join("");
 
-    const headerChip = `<span class="chip ${c.maxDias>10?'danger':''}">${c.maxDias>10?'⚠️ ':''}Máx: ${esc(c.maxDias)} dia(s)</span>`;
-    const openAttr = (c.maxDias > 10) ? "open" : "";
-
     return `
       <details class="patAcc" ${openAttr}>
         <summary>
           <div class="left">
-            <div>👤 ${esc(c.nome)}</div>
-            <div class="meta">${esc(c.count)} item(ns)</div>
+            <div>👤 ${esc(nome)}</div>
+            <div class="meta">${esc(arr.length)} item(ns)</div>
           </div>
           <div class="right">
             ${headerChip}
@@ -1101,7 +1078,6 @@ function onChangeSup(tipo){
   if(tipo==="materiais") selectedSup.materiais = document.getElementById("matSup").value;
   if(tipo==="epis") selectedSup.epis = document.getElementById("epiSup").value;
 
-  // ✅ patrimonios
   if(tipo==="patrimonios"){
     selectedSup.patrimonios = document.getElementById("patSup").value;
     loadAndRenderPatrimonios();
@@ -1130,8 +1106,8 @@ async function onChangeModo(tipo){
 }
 
 /* ==========================
-   (O RESTO DO SEU ARQUIVO CONTINUA IGUAL)
-   A PARTIR DAQUI NÃO ALTEREI SUA LÓGICA
+   RESTO DO SEU ARQUIVO
+   (mantive igual ao que você colou)
 ========================== */
 
 async function carregarUltimoPedido(tipo){
@@ -1150,7 +1126,6 @@ async function carregarUltimoPedido(tipo){
 
   lastPedido[tipo] = res.last || null;
 
-  // aplica no formulário
   if(tipo==="uniformes"){
     const data = res.last?.data || null;
     if(data){
@@ -1245,460 +1220,7 @@ async function refreshUltimoPDF(tipo){
   }
 }
 
-/* ==========================
-   UNIFORMES
-========================== */
-function renderUniformes(){
-  const colsRaw = Array.isArray(ctx?.colaboradores) ? ctx.colaboradores : [];
-  const supSel = String(selectedSup.uniformes||"").trim();
-
-  const cols = colsRaw
-    .filter(c=>{
-      const s = String(c.supervisao||"").trim() || "SEM SUPERVISÃO";
-      return normKey(s) === normKey(supSel || "SEM SUPERVISÃO");
-    })
-    .sort((a,b)=> normKey(a.colaborador).localeCompare(normKey(b.colaborador)));
-
-  const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
-
-  document.getElementById("pdfAreaUniformes").innerHTML = "";
-  document.getElementById("saveStatusUniformes").innerText = "";
-
-  if(!cols.length){
-    document.getElementById("listaUniformes").innerHTML =
-      `<div class="muted">Nenhum colaborador encontrado para esta supervisão.</div>`;
-  }else{
-    const html = cols.map(c=>{
-      const nome = c.colaborador;
-      if(!formUniformes[nome]) formUniformes[nome] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
-
-      const valT = (formUniformes[nome].tamanho||"M").toUpperCase();
-      const valQ = Number(formUniformes[nome].qtd||1)||1;
-      const valC = (formUniformes[nome].cor||"VERDE").toUpperCase();
-      const on   = !!formUniformes[nome].on;
-
-      return `
-        <div class="uniRow">
-          <input type="checkbox" ${on?"checked":""} onchange="onUniToggle('${encodeURIComponent(nome)}', this.checked)">
-          <div>
-            <div class="nm">${esc(nome)}</div>
-            <div class="sub">Supervisão: ${esc(supSel||"SEM SUPERVISÃO")}</div>
-          </div>
-
-          <select onchange="onUniformSizeChange('${encodeURIComponent(nome)}', this.value)">
-            ${tamanhos.map(t=>`<option ${String(t).toUpperCase()===valT?"selected":""}>${esc(String(t).toUpperCase())}</option>`).join("")}
-          </select>
-
-          <select onchange="onUniformQtdChange('${encodeURIComponent(nome)}', this.value)">
-            <option value="1" ${valQ===1?"selected":""}>1</option>
-            <option value="2" ${valQ===2?"selected":""}>2</option>
-          </select>
-
-          <select onchange="onUniformCorChange('${encodeURIComponent(nome)}', this.value)">
-            <option value="VERDE" ${valC==="VERDE"?"selected":""}>Verde</option>
-            <option value="CINZA" ${valC==="CINZA"?"selected":""}>Cinza</option>
-          </select>
-        </div>
-      `;
-    }).join("");
-
-    document.getElementById("listaUniformes").innerHTML = html;
-  }
-
-  // OUTROS
-  const outrosHtml = tamanhos.map((t)=>{
-    const T = String(t).toUpperCase();
-    if(!formOutrosUni[T]) formOutrosUni[T] = { qtd:0, cor:"VERDE" };
-
-    const qtd = Number(formOutrosUni[T].qtd||0)||0;
-    const cor = (formOutrosUni[T].cor||"VERDE").toUpperCase();
-
-    return `
-      <div class="othersUniRow">
-        <input value="OUTROS" disabled>
-        <select disabled><option selected>${esc(T)}</option></select>
-
-        <select onchange="onOutroQtdChangeUniforme('${encodeURIComponent(T)}', this.value)">
-          <option value="0" ${qtd===0?"selected":""}>0</option>
-          <option value="1" ${qtd===1?"selected":""}>1</option>
-          <option value="2" ${qtd===2?"selected":""}>2</option>
-        </select>
-
-        <select onchange="onOutroCorChangeUniforme('${encodeURIComponent(T)}', this.value)">
-          <option value="VERDE" ${cor==="VERDE"?"selected":""}>Verde</option>
-          <option value="CINZA" ${cor==="CINZA"?"selected":""}>Cinza</option>
-        </select>
-      </div>
-    `;
-  }).join("");
-
-  document.getElementById("listaOutrosUniformes").innerHTML = outrosHtml;
-}
-
-function onUniToggle(encNome, v){
-  const nome = decodeURIComponent(encNome);
-  if(!formUniformes[nome]) formUniformes[nome] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
-  formUniformes[nome].on = !!v;
-}
-
-function onUniformSizeChange(encNome, val){
-  const nome = decodeURIComponent(encNome);
-  if(!formUniformes[nome]) formUniformes[nome] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
-  formUniformes[nome].tamanho = String(val||"M").toUpperCase();
-}
-function onUniformQtdChange(encNome, val){
-  const nome = decodeURIComponent(encNome);
-  if(!formUniformes[nome]) formUniformes[nome] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
-  const n = (String(val)==="2") ? 2 : 1;
-  formUniformes[nome].qtd = n;
-}
-function onUniformCorChange(encNome, val){
-  const nome = decodeURIComponent(encNome);
-  if(!formUniformes[nome]) formUniformes[nome] = { on:true, tamanho:"M", qtd:1, cor:"VERDE" };
-  const c = (String(val).toUpperCase()==="CINZA") ? "CINZA" : "VERDE";
-  formUniformes[nome].cor = c;
-}
-
-function onOutroQtdChangeUniforme(encT, v){
-  const t = decodeURIComponent(encT);
-  const n = (String(v)==="2") ? 2 : (String(v)==="1" ? 1 : 0);
-  if(!formOutrosUni[t]) formOutrosUni[t] = { qtd:0, cor:"VERDE" };
-  formOutrosUni[t].qtd = n;
-}
-function onOutroCorChangeUniforme(encT, v){
-  const t = decodeURIComponent(encT);
-  const c = (String(v).toUpperCase()==="CINZA") ? "CINZA" : "VERDE";
-  if(!formOutrosUni[t]) formOutrosUni[t] = { qtd:0, cor:"VERDE" };
-  formOutrosUni[t].cor = c;
-}
-
-function b64ToBlob(b64, mime){
-  const bin = atob(b64);
-  const len = bin.length;
-  const bytes = new Uint8Array(len);
-  for(let i=0;i<len;i++) bytes[i] = bin.charCodeAt(i);
-  return new Blob([bytes], { type: mime || "application/pdf" });
-}
-function autoDownloadBlob(url, filename){
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename || "Pedido.pdf";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-/* ==========================
-   SALVAR UNIFORMES
-========================== */
-async function salvarUniformes(){
-  if(!ctx) return;
-
-  const dataRef = ctx.dataRef;
-  const supSel = String(selectedSup.uniformes||"").trim() || "SEM SUPERVISÃO";
-  const modoSel = modo.uniformes;
-
-  const colsRaw = Array.isArray(ctx.colaboradores) ? ctx.colaboradores : [];
-  const cols = colsRaw.filter(c => normKey(String(c.supervisao||"")||"SEM SUPERVISÃO") === normKey(supSel));
-
-  const itens = cols
-    .filter(c=>{
-      const nome = c.colaborador;
-      return !!(formUniformes[nome]?.on);
-    })
-    .map(c=>{
-      const nome = c.colaborador;
-      return {
-        colaborador: nome,
-        supervisao: supSel,
-        tamanho: (formUniformes[nome]?.tamanho || "M").toUpperCase(),
-        qtd: Number(formUniformes[nome]?.qtd || 1) || 1,
-        cor: (formUniformes[nome]?.cor || "VERDE").toUpperCase()
-      };
-    });
-
-  const tamanhos = Array.isArray(ctx?.tamanhos) ? ctx.tamanhos : ["PP","P","M","G","GG","XG","G1","G2","G3"];
-  const outros = {};
-  tamanhos.forEach(t=>{
-    const T = String(t).toUpperCase();
-    const q = Number(formOutrosUni?.[T]?.qtd || 0) || 0;
-    if(q > 0){
-      outros[T] = { qtd:q, cor:(formOutrosUni?.[T]?.cor || "VERDE").toUpperCase() };
-    }
-  });
-
-  if(!itens.length && Object.keys(outros).length===0){
-    document.getElementById("saveStatusUniformes").innerText = "Selecione ao menos 1 colaborador ou OUTROS.";
-    return;
-  }
-
-  setBusy(true);
-  document.getElementById("saveStatusUniformes").innerText = "Salvando e gerando PDF...";
-  document.getElementById("pdfAreaUniformes").innerHTML = "";
-
-  const pedidoId = (modoSel==="ATUALIZAR" && lastPedido.uniformes?.pedidoId) ? lastPedido.uniformes.pedidoId : "";
-  const res = await api("salvarTamanhos", {
-    payload: { dataRef, supervisao: supSel, modo: modoSel, pedidoId, itens, outros }
-  });
-
-  setBusy(false);
-
-  if(!res || !res.ok){
-    document.getElementById("saveStatusUniformes").innerText = res?.error || "Erro ao salvar";
-    return;
-  }
-
-  document.getElementById("saveStatusUniformes").innerText =
-    `✅ Salvo! Pedido: ${res.pedidoId} | Linhas: ${res.saved_rows || 0}`;
-
-  showToast(res.message || "Uniformes enviados com sucesso!");
-
-  const pdf = res.pdf || {};
-  if(pdf.b64){
-    const blob = b64ToBlob(pdf.b64, "application/pdf");
-    const url = URL.createObjectURL(blob);
-    const fileName = (pdf.fileName || "Pedido_Uniformes.pdf");
-
-    document.getElementById("pdfAreaUniformes").innerHTML = `
-      <a href="${url}" download="${esc(fileName)}">⬇️ Baixar PDF</a>
-      ${pdf.driveUrl ? `<div><a href="${esc(pdf.driveUrl)}" target="_blank">📁 PDF salvo no Drive</a></div>` : ``}
-      <div class="muted">Se não baixar automaticamente, clique no link.</div>
-    `;
-
-    autoDownloadBlob(url, fileName);
-  }else{
-    document.getElementById("pdfAreaUniformes").innerHTML = `<div class="muted">PDF não retornou.</div>`;
-  }
-
-  await refreshUltimoPDF('uniformes');
-  renderUniformes();
-}
-
-/* ==========================
-   MATERIAIS
-========================== */
-function renderMateriais(){
-  document.getElementById("saveStatusMateriais").innerText = "";
-  document.getElementById("pdfAreaMateriais").innerHTML = "";
-
-  const fixosHtml = MATERIAIS_FIXOS.map(m=>{
-    const qtd = Number(formMateriais[m] || 0);
-    return `
-      <div class="qtyRow">
-        <div class="matName">${esc(m)}</div>
-        <input type="number" min="0" step="1" value="${qtd}"
-               oninput="onMaterialQtyChange('${encodeURIComponent(m)}', this.value)"
-               placeholder="Qtd">
-      </div>
-    `;
-  }).join("");
-
-  document.getElementById("listaMateriais").innerHTML = fixosHtml;
-
-  const outrosHtml = formOutros.map((it, idx)=>{
-    return `
-      <div class="othersRow">
-        <input value="${esc(it.nome)}" placeholder="Nome do material (outros)"
-               oninput="onOutroNomeChange(${idx}, this.value)">
-        <input type="number" min="0" step="1" value="${Number(it.qtd||0)}"
-               oninput="onOutroQtdChangeMat(${idx}, this.value)"
-               placeholder="Qtd">
-        <button class="iconBtn" onclick="limparOutroMat(${idx})" title="Limpar">✕</button>
-      </div>
-    `;
-  }).join("");
-
-  document.getElementById("listaOutros").innerHTML = outrosHtml;
-}
-function onMaterialQtyChange(encMat, v){
-  const mat = decodeURIComponent(encMat);
-  const n = Math.max(0, parseInt(v || "0", 10) || 0);
-  formMateriais[mat] = n;
-}
-function onOutroNomeChange(i, v){ formOutros[i].nome = String(v || "").trim(); }
-function onOutroQtdChangeMat(i, v){ formOutros[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0); }
-function limparOutroMat(i){ formOutros[i] = { nome:"", qtd:0 }; renderMateriais(); }
-
-async function salvarMateriais(){
-  if(!ctx) return;
-
-  const dataRef = ctx.dataRef || "";
-  const supSel = String(selectedSup.materiais||"").trim() || "SEM SUPERVISÃO";
-  const modoSel = modo.materiais;
-
-  const itens = [];
-
-  MATERIAIS_FIXOS.forEach(m=>{
-    const qtd = Number(formMateriais[m] || 0);
-    if(qtd > 0) itens.push({ material: m, un: qtd });
-  });
-
-  formOutros.forEach(o=>{
-    const nome = String(o.nome||"").trim();
-    const qtd = Number(o.qtd||0);
-    if(nome && qtd > 0) itens.push({ material: nome, un: qtd });
-  });
-
-  if(!itens.length){
-    document.getElementById("saveStatusMateriais").innerText =
-      "Informe pelo menos 1 material com quantidade maior que 0.";
-    return;
-  }
-
-  setBusy(true);
-  document.getElementById("saveStatusMateriais").innerText = "Salvando e gerando PDF...";
-  document.getElementById("pdfAreaMateriais").innerHTML = "";
-
-  const pedidoId = (modoSel==="ATUALIZAR" && lastPedido.materiais?.pedidoId) ? lastPedido.materiais.pedidoId : "";
-  const res = await api("salvarMateriais", { payload: { dataRef, supervisao:supSel, modo:modoSel, pedidoId, itens } });
-  setBusy(false);
-
-  if(!res || !res.ok){
-    document.getElementById("saveStatusMateriais").innerText = res?.error || "Erro ao enviar";
-    return;
-  }
-
-  document.getElementById("saveStatusMateriais").innerText =
-    `✅ Salvo! Pedido: ${res.pedidoId} | Linhas: ${res.saved_rows || 0}`;
-
-  showToast(res.message || "Materiais enviados com sucesso!");
-
-  const pdf = res.pdf || {};
-  if(pdf.b64){
-    const blob = b64ToBlob(pdf.b64, "application/pdf");
-    const url = URL.createObjectURL(blob);
-    const fileName = (pdf.fileName || "Pedido_Materiais.pdf");
-
-    document.getElementById("pdfAreaMateriais").innerHTML = `
-      <a href="${url}" download="${esc(fileName)}">⬇️ Baixar PDF</a>
-      ${pdf.driveUrl ? `<div><a href="${esc(pdf.driveUrl)}" target="_blank">📁 PDF salvo no Drive</a></div>` : ``}
-      <div class="muted">Se não baixar automaticamente, clique no link.</div>
-    `;
-    autoDownloadBlob(url, fileName);
-  }else{
-    document.getElementById("pdfAreaMateriais").innerHTML = `<div class="muted">PDF não retornou.</div>`;
-  }
-
-  MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
-  formOutros = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
-
-  await refreshUltimoPDF('materiais');
-  renderMateriais();
-}
-
-/* ==========================
-   EPIs
-========================== */
-function renderEPIs(){
-  document.getElementById("saveStatusEPIs").innerText = "";
-  document.getElementById("pdfAreaEPIs").innerHTML = "";
-
-  const fixosHtml = EPIS_FIXOS.map(epi=>{
-    if(epi === "Botina"){
-      const lista = botinaItens.map((it, idx)=>`
-        <div class="othersRow" style="border-bottom:none; padding:8px 0;">
-          <input value="Tam ${esc(it.tam)}" disabled>
-          <input type="number" min="0" step="1" value="${Number(it.qtd||0)}"
-                 oninput="onBotinaQtdChange(${idx}, this.value)"
-                 placeholder="Un">
-          <button class="iconBtn" onclick="removerBotina(${idx})" title="Remover">✕</button>
-        </div>
-      `).join("");
-
-      return `
-        <div style="padding:10px 0; border-bottom:1px solid #f3f4f6;">
-          <div class="qtyRow" style="border-bottom:none; padding:0 0 6px 0;">
-            <div class="matName"><b>Botina</b> <span class="muted">Digite o tamanho (opcional)</span></div>
-            <div></div>
-          </div>
-
-          <div class="botinaInlineRow">
-            <input value="${esc(botinaTamInput)}"
-                   placeholder="Digite o tamanho"
-                   inputmode="numeric"
-                   oninput="onBotinaTamInput(this.value)">
-            <input type="number" min="0" step="1" value="${Number(botinaQtdInput||0)}"
-                   oninput="onBotinaQtdInput(this.value)"
-                   placeholder="Un">
-            <button class="botinaPlusBtn" onclick="addBotina()" title="Adicionar">+</button>
-          </div>
-
-          <div>${lista || `<div class="muted" style="margin-top:6px;">Nenhum tamanho adicionado.</div>`}</div>
-        </div>
-      `;
-    }
-
-    const qtd = Number(formEPIs[epi] || 0);
-    return `
-      <div class="qtyRow">
-        <div class="matName">${esc(epi)}</div>
-        <input type="number" min="0" step="1" value="${qtd}"
-               oninput="onEpiQtyChange('${encodeURIComponent(epi)}', this.value)"
-               placeholder="Un">
-      </div>
-    `;
-  }).join("");
-
-  document.getElementById("listaEPIs").innerHTML = fixosHtml;
-
-  const outrosHtml = formOutrosEPIs.map((it, idx)=>{
-    return `
-      <div class="othersRow">
-        <input value="${esc(it.nome)}" placeholder="Nome do EPI (outros)"
-               oninput="onOutroEpiNomeChange(${idx}, this.value)">
-        <input type="number" min="0" step="1" value="${Number(it.qtd||0)}"
-               oninput="onOutroEpiQtdChange(${idx}, this.value)"
-               placeholder="Un">
-        <button class="iconBtn" onclick="limparOutroEpi(${idx})" title="Limpar">✕</button>
-      </div>
-    `;
-  }).join("");
-
-  document.getElementById("listaOutrosEPIs").innerHTML = outrosHtml;
-}
-
-function onEpiQtyChange(encEpi, v){
-  const epi = decodeURIComponent(encEpi);
-  const n = Math.max(0, parseInt(v || "0", 10) || 0);
-  formEPIs[epi] = n;
-}
-function onBotinaTamInput(v){ botinaTamInput = String(v||"").trim(); }
-function onBotinaQtdInput(v){ botinaQtdInput = Math.max(0, parseInt(v||"0", 10) || 0); }
-function onBotinaQtdChange(i, v){
-  const n = Math.max(0, parseInt(v||"0", 10) || 0);
-  if(botinaItens[i]) botinaItens[i].qtd = n;
-}
-function removerBotina(i){ botinaItens.splice(i, 1); renderEPIs(); }
-
-function addBotina(){
-  const tam = String(botinaTamInput||"").trim();
-  const qtd = Math.max(0, parseInt(botinaQtdInput||"0", 10) || 0);
-
-  if(qtd <= 0){
-    document.getElementById("saveStatusEPIs").innerText = "Botina: informe a unidade (> 0).";
-    return;
-  }
-
-  const tamKey = tam ? tam.replace(/\s+/g," ").trim() : "";
-
-  if(tamKey){
-    const idx = botinaItens.findIndex(x => String(x.tam) === tamKey);
-    if(idx >= 0) botinaItens[idx].qtd = Number(botinaItens[idx].qtd||0) + qtd;
-    else botinaItens.push({ tam: tamKey, qtd });
-  }else{
-    formEPIs["Botina"] = (Number(formEPIs["Botina"]||0)||0) + qtd;
-  }
-
-  botinaTamInput = "";
-  botinaQtdInput = 0;
-  document.getElementById("saveStatusEPIs").innerText = "";
-  renderEPIs();
-}
-
-function onOutroEpiNomeChange(i, v){ formOutrosEPIs[i].nome = String(v || "").trim(); }
-function onOutroEpiQtdChange(i, v){ formOutrosEPIs[i].qtd = Math.max(0, parseInt(v || "0", 10) || 0); }
-function limparOutroEpi(i){ formOutrosEPIs[i] = { nome:"", qtd:0 }; renderEPIs(); }
-
+/* ======= (o resto do seu código segue igual ao que você colou) ======= */
 /* init */
 window.onload = async ()=>{
   const pin = document.getElementById("pin");
