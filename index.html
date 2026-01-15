@@ -148,6 +148,99 @@
     }
     .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
 
+    /* ==========================
+       PATRIMÔNIOS (NOVO)
+    ========================== */
+    .segRow{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+    .seg{
+      display:flex; gap:6px;
+      background:#f3f4f6;
+      padding:6px;
+      border-radius:999px;
+      border:1px solid #e5e7eb;
+      width:100%;
+      max-width:520px;
+    }
+    .seg button{
+      width:auto; flex:1;
+      padding:10px 12px;
+      border-radius:999px;
+      font-weight:900;
+      border:0;
+      background:transparent;
+      color:#111827;
+    }
+    .seg button.active{ background:#166534; color:#fff; }
+
+    .table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      margin-top:10px;
+      overflow:hidden;
+      border-radius:12px;
+      border:1px solid #e5e7eb;
+    }
+    .table thead th{
+      background:#166534;
+      color:#fff;
+      font-size:12px;
+      text-align:left;
+      padding:10px;
+      position:sticky;
+      top:0;
+      z-index:1;
+    }
+    .table td{
+      background:#fff;
+      border-top:1px solid #f3f4f6;
+      padding:10px;
+      font-size:13px;
+      vertical-align:top;
+    }
+    .table tr:nth-child(even) td{ background:#f9fafb; }
+
+    .chip{
+      display:inline-block;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      background:#eef2ff;
+      color:#111827;
+      border:1px solid #e5e7eb;
+      white-space:nowrap;
+    }
+    .chip.danger{
+      background:#fee2e2;
+      color:#7f1d1d;
+      border-color:#fecaca;
+    }
+
+    .patCard{
+      border:1px solid #e5e7eb;
+      border-radius:14px;
+      background:#fff;
+      padding:12px;
+      margin-top:10px;
+      box-shadow:0 1px 3px rgba(0,0,0,.06);
+    }
+    .patCard h4{ margin:0 0 8px; font-size:13px; color:#111827; }
+
+    .patItem{
+      display:grid;
+      grid-template-columns: 120px 1fr 140px 120px;
+      gap:10px;
+      padding:10px 0;
+      border-top:1px solid #f3f4f6;
+      align-items:start;
+    }
+    .patItem:first-child{ border-top:none; }
+    .patItem .num{ font-weight:900; }
+    .patItem .desc{ font-size:13px; }
+    .patItem .mut{ color:#6b7280; font-size:12px; }
+    .patItem .right{ text-align:right; }
+
     @media (max-width: 720px){
       .wrap{ padding:12px 10px 110px; }
       .menuGrid{ grid-template-columns: 1fr; }
@@ -157,6 +250,9 @@
       .othersRow{ grid-template-columns: 1fr; }
       .qtyRow{ grid-template-columns: 1fr; }
       .botinaInlineRow{ grid-template-columns: 1fr; }
+      .patItem{ grid-template-columns: 1fr; }
+      .patItem .right{ text-align:left; }
+      .seg{ max-width:none; }
     }
   </style>
 </head>
@@ -199,7 +295,7 @@
     <!-- MENU -->
     <div id="screenMenu" class="card">
       <h3>Escolha uma opção</h3>
-      <div class="muted">Selecione o que deseja registrar.</div>
+      <div class="muted">Selecione o que deseja registrar/consultar.</div>
 
       <div class="menuGrid">
         <button class="menuBtn" onclick="goUniformes()">
@@ -215,6 +311,12 @@
         <button class="menuBtn secondary" onclick="goEPIs()">
           🦺 EPI's
           <span class="small">Solicite EPIs com quantidade, Botina com vários tamanhos e PDF.</span>
+        </button>
+
+        <!-- ✅ NOVO -->
+        <button class="menuBtn secondary" onclick="goPatrimonios()">
+          🏷️ Patrimônios
+          <span class="small">Consulte nº, descrição, última leitura e dias sem leitura (alerta > 10).</span>
         </button>
       </div>
     </div>
@@ -333,6 +435,39 @@
       <div id="saveStatusEPIs" class="muted" style="margin-top:8px;"></div>
     </div>
 
+    <!-- ✅ PATRIMÔNIOS (NOVA TELA) -->
+    <div id="screenPatrimonios" class="card" style="display:none;">
+      <div class="row" style="align-items:center;">
+        <div class="col">
+          <h3>Patrimônios</h3>
+          <div class="muted">Consulte por supervisão. Dias sem leitura &gt; 10 ficam em vermelho.</div>
+        </div>
+        <div class="col" style="max-width:220px;">
+          <button class="secondary" onclick="goMenu()">⬅️ Voltar</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="col">
+          <div class="muted"><b>Supervisão</b></div>
+          <select id="patSup" onchange="onChangeSup('patrimonios')"></select>
+        </div>
+
+        <div class="col">
+          <div class="muted"><b>Visualização</b></div>
+          <div class="segRow">
+            <div class="seg">
+              <button id="btnPatTab" class="active" onclick="setPatView('TABELA')">Tabela única</button>
+              <button id="btnPatGrp" onclick="setPatView('AGRUPADO')">Agrupar por colaborador</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="patStatus" class="muted" style="margin-top:10px;"></div>
+      <div id="patContent" class="list"></div>
+    </div>
+
   </div>
 </div>
 
@@ -352,7 +487,8 @@ let ctx = null;
 let selectedSup = {
   uniformes: "",
   materiais: "",
-  epis: ""
+  epis: "",
+  patrimonios: "" // ✅ novo
 };
 let modo = {
   uniformes: "NOVA",
@@ -364,6 +500,10 @@ let lastPedido = {
   materiais: null,
   epis: null
 };
+
+// ✅ Patrimônios
+let patView = "TABELA"; // TABELA | AGRUPADO
+let patCacheBySup = {}; // supNorm -> itens
 
 // uniformes
 let formUniformes = {}; // nome -> {on:true, tamanho:"M", qtd:1, cor:"VERDE"}
@@ -452,9 +592,13 @@ function logout(){
   token = "";
   ctx = null;
 
-  selectedSup = { uniformes:"", materiais:"", epis:"" };
+  selectedSup = { uniformes:"", materiais:"", epis:"", patrimonios:"" };
   modo = { uniformes:"NOVA", materiais:"NOVA", epis:"NOVA" };
   lastPedido = { uniformes:null, materiais:null, epis:null };
+
+  // ✅ patrimonios
+  patView = "TABELA";
+  patCacheBySup = {};
 
   formUniformes = {};
   formOutrosUni = {};
@@ -505,7 +649,7 @@ function fillSupSelects(){
   const list = sups.length ? sups : ["SEM SUPERVISÃO"];
 
   // default: primeira
-  ["uniSup","matSup","epiSup"].forEach((id)=>{
+  ["uniSup","matSup","epiSup","patSup"].forEach((id)=>{
     const el = document.getElementById(id);
     if(!el) return;
     el.innerHTML = list.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");
@@ -514,10 +658,15 @@ function fillSupSelects(){
   selectedSup.uniformes = list[0] || "SEM SUPERVISÃO";
   selectedSup.materiais = list[0] || "SEM SUPERVISÃO";
   selectedSup.epis = list[0] || "SEM SUPERVISÃO";
+  selectedSup.patrimonios = list[0] || "SEM SUPERVISÃO";
 
   document.getElementById("uniSup").value = selectedSup.uniformes;
   document.getElementById("matSup").value = selectedSup.materiais;
   document.getElementById("epiSup").value = selectedSup.epis;
+  document.getElementById("patSup").value = selectedSup.patrimonios;
+
+  // reset view
+  setPatViewButtons_();
 }
 
 async function bootstrap(){
@@ -563,6 +712,11 @@ async function bootstrap(){
   botinaItens=[]; botinaTamInput=""; botinaQtdInput=0;
   formOutrosEPIs = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
 
+  // ✅ patrimonios
+  patView = "TABELA";
+  patCacheBySup = {};
+  setPatViewButtons_();
+
   // limpa áreas PDF
   ["pdfAreaUniformesTop","pdfAreaMateriaisTop","pdfAreaEPIsTop","pdfAreaUniformes","pdfAreaMateriais","pdfAreaEPIs"]
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=""; });
@@ -575,11 +729,12 @@ function goMenu(){
   hide("screenUniformes");
   hide("screenMateriais");
   hide("screenEPIs");
+  hide("screenPatrimonios");
   setBottomActions(`<button class="secondary" onclick="bootstrap()">Recarregar</button>`);
 }
 
 async function goUniformes(){
-  hide("screenMenu"); show("screenUniformes"); hide("screenMateriais"); hide("screenEPIs");
+  hide("screenMenu"); show("screenUniformes"); hide("screenMateriais"); hide("screenEPIs"); hide("screenPatrimonios");
   await refreshUltimoPDF('uniformes');
   renderUniformes();
   setBottomActions(`
@@ -589,7 +744,7 @@ async function goUniformes(){
 }
 
 async function goMateriais(){
-  hide("screenMenu"); hide("screenUniformes"); show("screenMateriais"); hide("screenEPIs");
+  hide("screenMenu"); hide("screenUniformes"); show("screenMateriais"); hide("screenEPIs"); hide("screenPatrimonios");
   await refreshUltimoPDF('materiais');
   renderMateriais();
   setBottomActions(`
@@ -599,7 +754,7 @@ async function goMateriais(){
 }
 
 async function goEPIs(){
-  hide("screenMenu"); hide("screenUniformes"); hide("screenMateriais"); show("screenEPIs");
+  hide("screenMenu"); hide("screenUniformes"); hide("screenMateriais"); show("screenEPIs"); hide("screenPatrimonios");
   await refreshUltimoPDF('epis');
   renderEPIs();
   setBottomActions(`
@@ -608,10 +763,234 @@ async function goEPIs(){
   `);
 }
 
+/* ==========================
+   PATRIMÔNIOS (NOVO)
+========================== */
+async function goPatrimonios(){
+  hide("screenMenu"); hide("screenUniformes"); hide("screenMateriais"); hide("screenEPIs"); show("screenPatrimonios");
+  document.getElementById("patStatus").innerText = "";
+  document.getElementById("patContent").innerHTML = "";
+
+  await loadAndRenderPatrimonios();
+
+  setBottomActions(`
+    <button class="secondary" onclick="bootstrap()">Recarregar</button>
+    <button class="secondary" onclick="refreshPatrimonios()">Atualizar Patrimônios</button>
+  `);
+}
+
+function setPatViewButtons_(){
+  const b1 = document.getElementById("btnPatTab");
+  const b2 = document.getElementById("btnPatGrp");
+  if(!b1 || !b2) return;
+  b1.classList.toggle("active", patView==="TABELA");
+  b2.classList.toggle("active", patView==="AGRUPADO");
+}
+
+function setPatView(v){
+  patView = (v==="AGRUPADO") ? "AGRUPADO" : "TABELA";
+  setPatViewButtons_();
+  renderPatrimoniosFromCache_();
+}
+
+async function refreshPatrimonios(){
+  const sup = String(selectedSup.patrimonios||"").trim() || "SEM SUPERVISÃO";
+  const key = normKey(sup||"SEM SUPERVISÃO");
+  delete patCacheBySup[key];
+  await loadAndRenderPatrimonios();
+}
+
+async function loadAndRenderPatrimonios(){
+  if(!ctx) return;
+
+  const supSel = String(selectedSup.patrimonios||"").trim() || "SEM SUPERVISÃO";
+  const key = normKey(supSel||"SEM SUPERVISÃO");
+
+  if(patCacheBySup[key]){
+    renderPatrimonios_(patCacheBySup[key], supSel);
+    return;
+  }
+
+  document.getElementById("patStatus").innerText = "Carregando patrimônios...";
+  document.getElementById("patContent").innerHTML = "";
+
+  setBusy(true);
+
+  // ✅ action esperada no backend:
+  // - carregarPatrimonios { payload: { supervisao } }
+  // Caso sua action tenha outro nome (ex: listarPatrimonios), troque aqui.
+  const res = await api("carregarPatrimonios", { payload: { supervisao: supSel } });
+
+  setBusy(false);
+
+  if(!res || !res.ok){
+    document.getElementById("patStatus").innerText = res?.error || "Erro ao carregar patrimônios.";
+    return;
+  }
+
+  const itens = Array.isArray(res.itens) ? res.itens : [];
+  patCacheBySup[key] = itens;
+
+  renderPatrimonios_(itens, supSel);
+}
+
+function renderPatrimoniosFromCache_(){
+  const supSel = String(selectedSup.patrimonios||"").trim() || "SEM SUPERVISÃO";
+  const key = normKey(supSel||"SEM SUPERVISÃO");
+  const itens = patCacheBySup[key] || [];
+  renderPatrimonios_(itens, supSel);
+}
+
+function parseDias_(v){
+  const n = parseInt(String(v||"0").replace(/[^\d-]/g,""), 10);
+  return isNaN(n) ? 0 : n;
+}
+function safeStr_(v){
+  const s = String(v||"").trim();
+  return s || "-";
+}
+
+function renderPatrimonios_(itens, supSel){
+  const elStatus = document.getElementById("patStatus");
+  const el = document.getElementById("patContent");
+
+  const list = (itens||[])
+    .map(x=>({
+      patrimonio: String(x.patrimonio||x["Patrimônio"]||x["Patrimonio"]||"").trim(),
+      funcionario: String(x.funcionario||x["Funcionário"]||x["Funcionario"]||"").trim(),
+      identificacao: String(x.identificacao||x["Identificação"]||x["Identificacao"]||"").trim(),
+      ultimaLeitura: safeStr_(x.ultimaLeitura||x["Ultima Leitura"]||x["Última Leitura"]||x["Ultima leitura"]||x["Última leitura"]),
+      diasSemLeitura: parseDias_(x.diasSemLeitura||x["Dias sem Leitura"]||x["Dias Sem Leitura"]||x["Dias_sem_leitura"])
+    }))
+    .filter(x=> x.patrimonio || x.identificacao || x.funcionario);
+
+  elStatus.innerText = list.length
+    ? `Encontrados ${list.length} patrimônios para: ${supSel}`
+    : `Nenhum patrimônio encontrado para: ${supSel}`;
+
+  if(!list.length){
+    el.innerHTML = `<div class="muted">Sem registros.</div>`;
+    return;
+  }
+
+  // ordena por atraso desc, depois nome, depois patrimonio
+  list.sort((a,b)=>{
+    const d = (b.diasSemLeitura||0) - (a.diasSemLeitura||0);
+    if(d!==0) return d;
+    const n = normKey(a.funcionario).localeCompare(normKey(b.funcionario));
+    if(n!==0) return n;
+    return normKey(a.patrimonio).localeCompare(normKey(b.patrimonio));
+  });
+
+  if(patView === "TABELA"){
+    const rows = list.map(it=>{
+      const danger = (it.diasSemLeitura||0) > 10;
+      const chip = `<span class="chip ${danger?'danger':''}">${danger ? '⚠️ ' : ''}${esc(it.diasSemLeitura)} dia(s)</span>`;
+      return `
+        <tr>
+          <td><b>${esc(it.patrimonio||"-")}</b></td>
+          <td>${esc(it.identificacao||"-")}</td>
+          <td>${esc(it.funcionario||"-")}</td>
+          <td>${esc(it.ultimaLeitura||"-")}</td>
+          <td>${chip}</td>
+        </tr>
+      `;
+    }).join("");
+
+    el.innerHTML = `
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width:16%;">Patrimônio</th>
+            <th style="width:34%;">Descrição</th>
+            <th style="width:22%;">Colaborador</th>
+            <th style="width:14%;">Última leitura</th>
+            <th style="width:14%;">Dias sem leitura</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+      <div class="muted" style="margin-top:8px;">Regra: Dias sem leitura &gt; 10 = destaque vermelho.</div>
+    `;
+    return;
+  }
+
+  // AGRUPADO
+  const grp = new Map();
+  list.forEach(it=>{
+    const k = it.funcionario || "SEM FUNCIONÁRIO";
+    if(!grp.has(k)) grp.set(k, []);
+    grp.get(k).push(it);
+  });
+
+  const colabs = Array.from(grp.keys()).map(nome=>{
+    const arr = grp.get(nome) || [];
+    const maxDias = arr.reduce((m,x)=> Math.max(m, x.diasSemLeitura||0), 0);
+    return { nome, maxDias, count: arr.length };
+  }).sort((a,b)=>{
+    const d = b.maxDias - a.maxDias;
+    if(d!==0) return d;
+    return normKey(a.nome).localeCompare(normKey(b.nome));
+  });
+
+  const cards = colabs.map(c=>{
+    const arr = grp.get(c.nome) || [];
+    arr.sort((a,b)=> ((b.diasSemLeitura||0) - (a.diasSemLeitura||0)) || normKey(a.patrimonio).localeCompare(normKey(b.patrimonio)));
+
+    const itensHtml = arr.map(it=>{
+      const danger = (it.diasSemLeitura||0) > 10;
+      const chip = `<span class="chip ${danger?'danger':''}">${danger ? '⚠️ ' : ''}${esc(it.diasSemLeitura)} dia(s)</span>`;
+      return `
+        <div class="patItem">
+          <div class="num">${esc(it.patrimonio||"-")}</div>
+          <div class="desc">
+            <div><b>${esc(it.identificacao||"-")}</b></div>
+            <div class="mut">${esc(it.funcionario||"")}</div>
+          </div>
+          <div class="right">
+            <div class="mut">Última leitura</div>
+            <div><b>${esc(it.ultimaLeitura||"-")}</b></div>
+          </div>
+          <div class="right">
+            <div class="mut">Dias</div>
+            <div>${chip}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    const headerChip = `<span class="chip ${c.maxDias>10?'danger':''}">${c.maxDias>10?'⚠️ ':''}Máx: ${esc(c.maxDias)} dia(s)</span>`;
+    return `
+      <div class="patCard">
+        <h4>${esc(c.nome)} <span class="muted">(${c.count} itens)</span> ${headerChip}</h4>
+        ${itensHtml}
+      </div>
+    `;
+  }).join("");
+
+  el.innerHTML = `
+    ${cards}
+    <div class="muted" style="margin-top:8px;">Regra: Dias sem leitura &gt; 10 = destaque vermelho.</div>
+  `;
+}
+
+/* ==========================
+   SUP / MODO
+========================== */
 function onChangeSup(tipo){
   if(tipo==="uniformes") selectedSup.uniformes = document.getElementById("uniSup").value;
   if(tipo==="materiais") selectedSup.materiais = document.getElementById("matSup").value;
   if(tipo==="epis") selectedSup.epis = document.getElementById("epiSup").value;
+
+  // ✅ patrimonios
+  if(tipo==="patrimonios"){
+    selectedSup.patrimonios = document.getElementById("patSup").value;
+    loadAndRenderPatrimonios();
+    return;
+  }
+
   onChangeModo(tipo);
 }
 
@@ -654,7 +1033,6 @@ async function carregarUltimoPedido(tipo){
   if(tipo==="uniformes"){
     const data = res.last?.data || null;
     if(data){
-      // reset somente da supervisão selecionada
       (data.itens||[]).forEach(it=>{
         if(!formUniformes[it.colaborador]) return;
         formUniformes[it.colaborador].on = true;
@@ -678,11 +1056,9 @@ async function carregarUltimoPedido(tipo){
   if(tipo==="materiais"){
     const data = res.last?.data || null;
     if(data){
-      // zera
       MATERIAIS_FIXOS.forEach(m=> formMateriais[m]=0);
       formOutros = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
 
-      // aplica
       const itens = data.itens||[];
       let outrosIdx = 0;
       itens.forEach(it=>{
@@ -702,7 +1078,6 @@ async function carregarUltimoPedido(tipo){
   if(tipo==="epis"){
     const data = res.last?.data || null;
     if(data){
-      // zera
       EPIS_FIXOS.forEach(e=> formEPIs[e]=0);
       botinaItens=[]; botinaTamInput=""; botinaQtdInput=0;
       formOutrosEPIs = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
@@ -971,9 +1346,7 @@ async function salvarUniformes(){
     document.getElementById("pdfAreaUniformes").innerHTML = `<div class="muted">PDF não retornou.</div>`;
   }
 
-  // atualiza último pdf
   await refreshUltimoPDF('uniformes');
-
   renderUniformes();
 }
 
@@ -1082,7 +1455,6 @@ async function salvarMateriais(){
     document.getElementById("pdfAreaMateriais").innerHTML = `<div class="muted">PDF não retornou.</div>`;
   }
 
-  // reset
   MATERIAIS_FIXOS.forEach(m => formMateriais[m] = 0);
   formOutros = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
 
@@ -1183,7 +1555,6 @@ function addBotina(){
     return;
   }
 
-  // tamanho opcional
   const tamKey = tam ? tam.replace(/\s+/g," ").trim() : "";
 
   if(tamKey){
@@ -1191,7 +1562,6 @@ function addBotina(){
     if(idx >= 0) botinaItens[idx].qtd = Number(botinaItens[idx].qtd||0) + qtd;
     else botinaItens.push({ tam: tamKey, qtd });
   }else{
-    // sem tamanho: soma em "Botina" fixa
     formEPIs["Botina"] = (Number(formEPIs["Botina"]||0)||0) + qtd;
   }
 
@@ -1214,18 +1584,15 @@ async function salvarEPIs(){
 
   const itens = [];
 
-  // fixos exceto botina
   EPIS_FIXOS.forEach(epi=>{
     if(epi === "Botina") return;
     const qtd = Number(formEPIs[epi] || 0);
     if(qtd > 0) itens.push({ epi, un: qtd });
   });
 
-  // botina "fixa" sem tamanho
   const botinaFixa = Number(formEPIs["Botina"]||0)||0;
   if(botinaFixa > 0) itens.push({ epi:"Botina", un: botinaFixa });
 
-  // botina por tamanho
   botinaItens.forEach(it=>{
     const qtd = Number(it.qtd||0);
     const tam = String(it.tam||"").trim();
@@ -1278,7 +1645,6 @@ async function salvarEPIs(){
     document.getElementById("pdfAreaEPIs").innerHTML = `<div class="muted">PDF não retornou.</div>`;
   }
 
-  // reset
   EPIS_FIXOS.forEach(e => formEPIs[e] = 0);
   botinaItens=[]; botinaTamInput=""; botinaQtdInput=0;
   formOutrosEPIs = [{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0},{nome:"",qtd:0}];
