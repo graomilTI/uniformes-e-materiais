@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <title>Gestor – Uniformes, Materiais e EPIs</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- ✅ evita favicon 404 -->
+  <link rel="icon" href="data:,">
+
   <style>
     :root{
       --bg:#f5f6f7; --card:#fff; --txt:#0f172a; --muted:#6b7280;
@@ -385,11 +388,10 @@
  * CONFIG
  * ============================= */
 /**
- * ✅ Se este index estiver hospedado FORA do Apps Script (Cloudflare, etc.),
- * preencha com a URL do seu WebApp /exec:
- * Ex.: "https://script.google.com/macros/s/XXXX/exec"
+ * ✅ Você já tem um WORKER apontando pro GAS.
+ * Então o front DEVE postar no Worker (não no site).
  */
-const WEBAPP_URL = "";
+const WEBAPP_URL = "https://uniformes-e-materiais.tecnologia-f0c.workers.dev/";
 
 const CORES_UNIFORME = ["VERDE","CINZA"];
 const EPIS_FIXOS = ["Capacete","Protetor auricular","Óculos Transparente","Luva PU","Mascara PFF2","Botina"];
@@ -446,19 +448,17 @@ function setBtnDisabled(v){
   document.querySelectorAll("button").forEach(b=> b.disabled = !!v);
 }
 
-/** ✅ base URL sem query/hash (evita postar em ?auth=1, etc.) */
-function getDefaultPostUrl_(){
-  return (window.location.origin + window.location.pathname);
-}
-
 /**
- * ✅ API robusta (evita CORS preflight no GAS)
+ * ✅ API robusta
  * - Envia JSON como text/plain
  * - Lê text() e tenta JSON.parse
  * - Se vier HTML/erro, retorna ok:false e deixa preview no console
  */
 async function api(action, payloadObj){
-  const url = (WEBAPP_URL && WEBAPP_URL.trim()) ? WEBAPP_URL.trim() : getDefaultPostUrl_();
+  if(!WEBAPP_URL || !WEBAPP_URL.trim()){
+    return { ok:false, error:"WEBAPP_URL não configurado." };
+  }
+  const url = WEBAPP_URL.trim();
   const body = { action, token, ...(payloadObj||{}) };
 
   let res, text = "";
@@ -749,7 +749,7 @@ async function salvarUniformes(){
 
     itens.push({
       colaborador: nome,
-      supervisao: sup, // seu GAS valida/organiza
+      supervisao: sup,
       coordenacao: String(c.coordenacao||"").trim(),
       tamanho: String(st.tamanho||"M").toUpperCase(),
       qtd: Number(st.qtd||1)||1,
