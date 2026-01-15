@@ -384,7 +384,12 @@
 /** =============================
  * CONFIG
  * ============================= */
-const WEBAPP_URL = ""; // ✅ opcional: se vazio, usa window.location.href
+/**
+ * ✅ Se este index estiver hospedado FORA do Apps Script (Cloudflare, etc.),
+ * preencha com a URL do seu WebApp /exec:
+ * Ex.: "https://script.google.com/macros/s/XXXX/exec"
+ */
+const WEBAPP_URL = "";
 
 const CORES_UNIFORME = ["VERDE","CINZA"];
 const EPIS_FIXOS = ["Capacete","Protetor auricular","Óculos Transparente","Luva PU","Mascara PFF2","Botina"];
@@ -441,20 +446,43 @@ function setBtnDisabled(v){
   document.querySelectorAll("button").forEach(b=> b.disabled = !!v);
 }
 
+/** ✅ base URL sem query/hash (evita postar em ?auth=1, etc.) */
+function getDefaultPostUrl_(){
+  return (window.location.origin + window.location.pathname);
+}
+
+/**
+ * ✅ API robusta (evita CORS preflight no GAS)
+ * - Envia JSON como text/plain
+ * - Lê text() e tenta JSON.parse
+ * - Se vier HTML/erro, retorna ok:false e deixa preview no console
+ */
 async function api(action, payloadObj){
-  const url = (WEBAPP_URL && WEBAPP_URL.trim()) ? WEBAPP_URL.trim() : window.location.href;
+  const url = (WEBAPP_URL && WEBAPP_URL.trim()) ? WEBAPP_URL.trim() : getDefaultPostUrl_();
   const body = { action, token, ...(payloadObj||{}) };
 
+  let res, text = "";
   try{
-    const res = await fetch(url, {
+    res = await fetch(url, {
       method:"POST",
-      headers:{ "Content-Type":"application/json" },
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
       body: JSON.stringify(body)
     });
-    const json = await res.json().catch(()=>null);
-    return json || { ok:false, error:"Resposta inválida do servidor." };
+    text = await res.text();
   }catch(e){
-    return { ok:false, error:String(e?.message||e) };
+    console.log("API fetch erro:", e);
+    return { ok:false, error:"Falha de rede/CORS", raw:String(e?.message||e) };
+  }
+
+  try{
+    return JSON.parse(text);
+  }catch(_){
+    console.log("API NON-JSON:", {
+      httpStatus: res?.status,
+      url,
+      preview: String(text||"").slice(0, 400)
+    });
+    return { ok:false, error:`Resposta inválida do servidor (HTTP ${res?.status||"?"}). Veja Console.`, raw:text };
   }
 }
 
