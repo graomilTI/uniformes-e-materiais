@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Gestor – Uniformes, Materiais e EPIs</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
   <style>
     :root{
       --bg:#0b0f19;
@@ -23,6 +22,8 @@
       --shadow: 0 20px 50px rgba(0,0,0,.45);
       --shadow2: 0 10px 20px rgba(0,0,0,.25);
       --max:1200px;
+
+      color-scheme: dark;
     }
 
     *{ box-sizing:border-box; }
@@ -40,9 +41,6 @@
       -moz-osx-font-smoothing: grayscale;
     }
 
-    a{ color:rgba(34,197,94,.95); font-weight:900; text-decoration:none; }
-    a:hover{ text-decoration:underline; }
-
     .wrap{ max-width:var(--max); margin:auto; padding:16px 16px 140px; }
 
     /* Topbar */
@@ -58,7 +56,7 @@
     }
     .brand{
       display:flex; align-items:center; gap:10px;
-      font-weight:1000; letter-spacing:.2px;
+      font-weight:900; letter-spacing:.2px;
     }
     .brand .dot{
       width:36px; height:36px; border-radius:14px;
@@ -75,8 +73,10 @@
       color:var(--muted);
       font-size:12px;
     }
-    .pill b{ color:var(--txt); font-weight:1000; }
+    .pill b{ color:var(--txt); font-weight:900; }
+    @media (max-width:900px){ .pill{ display:none; } }
 
+    /* Cards */
     .card{
       background: rgba(255,255,255,.06);
       border:1px solid rgba(255,255,255,.10);
@@ -86,22 +86,17 @@
       box-shadow: var(--shadow2);
     }
     h2,h3{ margin:0 0 10px; }
-    h2{ font-size:18px; font-weight:1000; }
-    h3{ font-size:13px; font-weight:1000; color: rgba(255,255,255,.86); }
+    h2{ font-size:18px; font-weight:900; }
+    h3{ font-size:13px; font-weight:900; color: rgba(255,255,255,.86); }
     .muted{ color:var(--muted); font-size:12.5px; line-height:1.35; white-space:pre-line; }
     .small{ font-size:12px; color:var(--muted); }
-    .ok{ color: #86efac; font-weight:1000; }
-    .err{ color: #fecaca; font-weight:1000; }
-    .warn{ color: #fde68a; font-weight:1000; }
-
-    .line{ height:1px; background: rgba(255,255,255,.10); margin:14px 0; }
+    .ok{ color: #86efac; font-weight:900; }
+    .err{ color: #fecaca; font-weight:900; }
+    .warn{ color: #fde68a; font-weight:900; }
 
     .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
     .grid3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; }
-    @media (max-width:900px){
-      .grid2,.grid3{ grid-template-columns:1fr; }
-      .pill{ display:none; }
-    }
+    @media (max-width:900px){ .grid2,.grid3{ grid-template-columns:1fr; } }
 
     input,select,button,textarea{
       width:100%;
@@ -124,7 +119,6 @@
 
     button{ cursor:pointer; border:none; }
     button:active{ transform: translateY(1px); }
-
     .btn{
       background: linear-gradient(135deg, rgba(34,197,94,1), rgba(22,163,74,1));
       color:#04110a;
@@ -142,7 +136,7 @@
       background: rgba(255,255,255,.06);
       border:1px solid rgba(255,255,255,.12);
       color: rgba(255,255,255,.90);
-      font-weight:1000;
+      font-weight:900;
     }
     .danger{
       background: linear-gradient(135deg, rgba(239,68,68,1), rgba(153,27,27,1));
@@ -151,28 +145,32 @@
       box-shadow: 0 16px 34px rgba(239,68,68,.16);
     }
 
-    .tabs{
-      display:flex; gap:10px; flex-wrap:wrap;
-      padding:8px;
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:999px;
-      background: rgba(255,255,255,.04);
-    }
-    .tab{
-      padding:10px 12px;
-      border-radius:999px;
+    .line{ height:1px; background: rgba(255,255,255,.10); margin:14px 0; }
+
+    /* Menu 2x2 */
+    .menuGrid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .menuBtn{
+      text-align:left;
+      padding:14px;
+      border-radius:18px;
       border:1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.06);
-      cursor:pointer;
-      font-weight:1000;
-      font-size:13px;
-      color: rgba(255,255,255,.88);
-      user-select:none;
+      color: rgba(255,255,255,.92);
+      box-shadow: 0 10px 20px rgba(0,0,0,.18);
+      transition: transform .08s ease, border-color .2s ease, background .2s ease;
     }
-    .tab.active{
-      background: rgba(34,197,94,.18);
-      border-color: rgba(34,197,94,.25);
-      color:#d1fae5;
+    .menuBtn:hover{
+      border-color: rgba(34,197,94,.22);
+      background: rgba(255,255,255,.08);
+    }
+    .menuBtn:active{ transform: translateY(1px); }
+    .menuBtn .ico{ font-size:22px; }
+    .menuBtn .ttl{ margin-top:8px; font-weight:1000; font-size:14px; }
+    .menuBtn .cap{ margin-top:4px; font-size:12px; color: rgba(255,255,255,.62); font-weight:900; }
+    .menuBtn.active{
+      border-color: rgba(34,197,94,.35);
+      background: rgba(34,197,94,.14);
+      box-shadow: 0 18px 40px rgba(34,197,94,.10);
     }
 
     /* Collapsible sections */
@@ -181,8 +179,13 @@
       background: rgba(255,255,255,.04);
       border-radius: 16px;
       padding:10px 12px;
+      transition: background .2s ease, border-color .2s ease;
     }
     details + details{ margin-top:10px; }
+    details[open]{
+      background: rgba(255,255,255,.05);
+      border-color: rgba(34,197,94,.14);
+    }
     summary{
       list-style:none;
       cursor:pointer;
@@ -192,22 +195,10 @@
       justify-content:space-between;
       gap:10px;
       font-weight:1000;
-      color: rgba(255,255,255,.92);
+      color: rgba(255,255,255,.90);
     }
     summary::-webkit-details-marker{ display:none; }
-    summary .hint{ font-size:12px; color: var(--muted); font-weight:1000; }
-    .chip{
-      display:inline-flex; gap:8px; align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
-      color: rgba(255,255,255,.84);
-      font-size:12px;
-      font-weight:1000;
-      white-space:nowrap;
-    }
-    .chipRow{ display:flex; flex-wrap:wrap; gap:8px; }
+    summary .hint{ font-size:12px; color: var(--muted); font-weight:900; }
 
     /* Uniformes list */
     .uniRow{
@@ -219,19 +210,40 @@
       border:1px solid rgba(255,255,255,.10);
       border-radius: 16px;
       background: rgba(255,255,255,.04);
+      margin-bottom:10px;
     }
-    .uniRow input[type="checkbox"]{
-      width:18px; height:18px;
-      accent-color: var(--brand);
-    }
+    .uniRow input[type="checkbox"]{ width:18px; height:18px; accent-color: var(--brand); }
     .nm{ font-weight:1000; }
     .sub{ font-size:12px; color:var(--muted); margin-top:2px; }
 
     @media (max-width:900px){
       .uniRow{ grid-template-columns: 22px 1fr; }
-      .uniRow select{ margin-top:8px; }
+      .uniRow .desktopOnly{ display:none !important; }
+      .uniRow .mobileOnly{ display:block !important; }
+    }
+    @media (min-width:901px){
+      .uniRow .desktopOnly{ display:block !important; }
+      .uniRow .mobileOnly{ display:none !important; }
     }
 
+    .chipsGroup{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .chipBtn{
+      width:auto;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.88);
+      font-weight:1000;
+      font-size:12px;
+    }
+    .chipBtn.active{
+      border-color: rgba(34,197,94,.28);
+      background: rgba(34,197,94,.14);
+      color:#d1fae5;
+    }
+
+    /* Cards internos */
     .itemCard{
       background: rgba(255,255,255,.04);
       border:1px solid rgba(255,255,255,.10);
@@ -240,21 +252,51 @@
       margin-top:10px;
     }
 
-    .footerBar{
-      position:fixed; left:0; right:0; bottom:0; z-index:60;
+    /* Anim */
+    @keyframes fadeUp{
+      from{ opacity:0; transform: translateY(10px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+    .paneAnim{ animation: fadeUp .18s ease-out; }
+
+    /* FAB */
+    .fab{
+      position:fixed;
+      right:16px;
+      bottom:16px;
+      z-index:80;
+      width:56px;
+      height:56px;
+      border-radius:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:20px;
+      font-weight:1000;
+      color:#04110a;
+      background: linear-gradient(135deg, rgba(34,197,94,1), rgba(22,163,74,1));
+      box-shadow: 0 20px 40px rgba(34,197,94,.18);
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .fab:disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; }
+    .fabLabel{
+      position:fixed;
+      right:86px;
+      bottom:26px;
+      z-index:80;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
       background: rgba(11,15,25,.65);
       backdrop-filter: blur(14px);
-      border-top:1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.88);
+      font-weight:1000;
+      font-size:12px;
+      display:none;
     }
-    .footerBar .inner{
-      max-width:var(--max); margin:auto; padding:12px 16px;
-      display:flex; gap:10px;
-    }
-    .footerBar .inner button{ padding:12px; border-radius:16px; }
-    @media (max-width:700px){
-      .footerBar .inner{ display:grid; grid-template-columns:1fr; }
-    }
+    .fab:hover + .fabLabel{ display:block; }
 
+    /* Toast / Busy */
     .toast{
       position:fixed; left:50%; transform:translateX(-50%);
       bottom:96px;
@@ -284,6 +326,12 @@
       color: rgba(255,255,255,.92);
       box-shadow: var(--shadow);
     }
+
+    /* Select dropdown fix */
+    select option{
+      background-color: #0b0f19;
+      color: rgba(255,255,255,.92);
+    }
   </style>
 </head>
 
@@ -298,9 +346,12 @@
         </div>
       </div>
 
-      <div class="pill">
-        <span>DataRef:</span> <b id="pillDataRef">—</b>
-        <span style="margin-left:8px;">Gestor:</span> <b id="pillGestor">—</b>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div class="pill">
+          <span>DataRef:</span> <b id="pillDataRef">—</b>
+          <span style="margin-left:8px;">Gestor:</span> <b id="pillGestor">—</b>
+        </div>
+        <button class="btnGhost" style="width:auto; padding:10px 12px; border-radius:14px;" onclick="logout()">Sair</button>
       </div>
     </div>
   </div>
@@ -311,35 +362,68 @@
     <div class="card" id="cardLogin">
       <h2>🔐 Login</h2>
       <div class="muted">Informe seu PIN (4 dígitos) para carregar colaboradores e supervisões.</div>
-
-      <div class="grid2" style="margin-top:12px;">
+      <div class="grid2" style="margin-top:10px;">
         <input id="pin" inputmode="numeric" placeholder="PIN (4 dígitos)" maxlength="4" />
         <button class="btn" onclick="login()">Entrar</button>
       </div>
-      <div class="small" id="loginStatus" style="margin-top:10px;"></div>
+      <div class="small" id="loginStatus" style="margin-top:8px;"></div>
     </div>
 
     <!-- APP -->
     <div id="app" style="display:none;">
 
       <div class="card">
-        <div class="chipRow" style="justify-content:space-between; align-items:center;">
-          <div class="chip">🗓️ DataRef: <b id="badgeDataRef">—</b></div>
-          <div class="chip">👤 <b id="gestorNome">—</b></div>
-          <div class="chip">🏷️ <b id="gestorCoord">—</b></div>
+        <h2>👤 Sessão</h2>
+        <div class="grid3">
+          <div>
+            <div class="small">Gestor</div>
+            <div style="font-weight:1000;" id="gestorNome">—</div>
+          </div>
+          <div>
+            <div class="small">Coordenação</div>
+            <div style="font-weight:1000;" id="gestorCoord">—</div>
+          </div>
+          <div>
+            <div class="small">Supervisões liberadas</div>
+            <div class="muted" id="gestorSups">—</div>
+          </div>
         </div>
-        <div class="muted" id="gestorSups" style="margin-top:10px;">—</div>
+        <div class="line"></div>
+        <div class="grid2">
+          <button class="btnGhost" onclick="reloadAll()">Recarregar</button>
+          <button class="btn" onclick="salvarAtual()">Salvar e Baixar PDF</button>
+        </div>
       </div>
 
       <div class="card">
-        <div class="tabs">
-          <div class="tab active" id="tabUniformes" onclick="setTab('uniformes')">👕 Uniformes</div>
-          <div class="tab" id="tabMateriais" onclick="setTab('materiais')">📦 Materiais</div>
-          <div class="tab" id="tabEPIs" onclick="setTab('epis')">🦺 EPIs</div>
-          <div class="tab" id="tabPatrimonios" onclick="setTab('patrimonios')">🧾 Patrimônios</div>
+        <div class="menuGrid">
+          <button class="menuBtn active" id="tabUniformes" onclick="setTab('uniformes')">
+            <div class="ico">👕</div>
+            <div class="ttl">Uniformes</div>
+            <div class="cap">Tamanho • cor • qtd</div>
+          </button>
+
+          <button class="menuBtn" id="tabMateriais" onclick="setTab('materiais')">
+            <div class="ico">📦</div>
+            <div class="ttl">Materiais</div>
+            <div class="cap">Lista fixa + outros</div>
+          </button>
+
+          <button class="menuBtn" id="tabEPIs" onclick="setTab('epis')">
+            <div class="ico">🦺</div>
+            <div class="ttl">EPIs</div>
+            <div class="cap">Fixos + botinas</div>
+          </button>
+
+          <button class="menuBtn" id="tabPatrimonios" onclick="setTab('patrimonios')">
+            <div class="ico">🧾</div>
+            <div class="ttl">Patrimônios</div>
+            <div class="cap">Consulta e alertas</div>
+          </button>
         </div>
+
         <div class="muted" style="margin-top:10px;">
-          Dica: use <b>Último pedido</b> quando for apenas ajustar algo — evita refazer tudo.
+          Tudo que é “extra” fica recolhido para manter o painel limpo.
         </div>
       </div>
 
@@ -347,112 +431,18 @@
       <div class="card" id="paneUniformes">
         <h2>👕 Uniformes</h2>
 
-        <div class="grid2">
+        <div class="grid3">
           <div>
             <div class="small">Supervisão</div>
             <select id="supUniformes" onchange="onChangeSup('uniformes')"></select>
           </div>
           <div>
-            <div class="small">Buscar colaborador</div>
-            <input id="buscaUniformes" placeholder="Digite um nome..." oninput="renderUniformes()" />
+            <div class="small">Resumo</div>
+            <div class="muted" id="uniHint">—</div>
           </div>
-        </div>
-
-        <div class="line"></div>
-
-        <div class="chipRow" style="justify-content:space-between;">
-          <div class="chip" id="uniResumo">Resumo: —</div>
-          <div class="chipRow">
-            <button class="btnGhost" style="width:auto; padding:10px 12px;" onclick="setAllUniformes(true)">Marcar todos</button>
-            <button class="btnGhost" style="width:auto; padding:10px 12px;" onclick="setAllUniformes(false)">Desmarcar</button>
-          </div>
-        </div>
-
-        <div style="margin-top:12px;">
-          <details>
-            <summary>
-              <span>⚙️ Ações avançadas</span>
-              <span class="hint">Último pedido • PDF • PedidoId</span>
-            </summary>
-
-            <div class="line"></div>
-
-            <div class="grid3">
-              <div>
-                <div class="small">Modo</div>
-                <select id="modoUniformes" onchange="modo.uniformes=this.value">
-                  <option value="NOVA">NOVO PEDIDO</option>
-                  <option value="ATUALIZAR">ALTERAR PEDIDO</option>
-                </select>
-              </div>
-              <div>
-                <div class="small">PedidoId (ALTERAR)</div>
-                <input id="pedidoIdUniformes" placeholder="(auto ao carregar último pedido)" />
-              </div>
-              <div>
-                <div class="small">Ações</div>
-                <div class="grid2">
-                  <button class="btnGhost" onclick="carregarUltimoPedido('uniformes')">↩️ Último pedido</button>
-                  <button class="btnGhost" onclick="refreshUltimoPDF('uniformes')">📄 Último PDF</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="small" id="infoUltimoUniformes" style="margin-top:10px;"></div>
-          </details>
-
-          <details style="margin-top:10px;">
-            <summary>
-              <span>➕ OUTROS (extras)</span>
-              <span class="hint">Itens fora da lista</span>
-            </summary>
-
-            <div class="line"></div>
-
-            <div class="grid3">
-              <div>
-                <div class="small">Tamanho</div>
-                <select id="outUniTam"></select>
-              </div>
-              <div>
-                <div class="small">Qtd</div>
-                <select id="outUniQtd">
-                  <option value="0">0</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                </select>
-              </div>
-              <div>
-                <div class="small">Cor</div>
-                <select id="outUniCor"></select>
-              </div>
-            </div>
-
-            <button class="btn" style="margin-top:10px;" onclick="addOutroUniforme()">Adicionar</button>
-            <div id="outrosUniformesList" style="margin-top:10px;"></div>
-          </details>
-        </div>
-
-        <div class="line"></div>
-
-        <h3>Colaboradores</h3>
-        <div class="muted" id="uniHint"></div>
-        <div id="listaUniformes" style="margin-top:10px;"></div>
-
-        <div class="small" id="saveStatusUniformes" style="margin-top:12px;"></div>
-      </div>
-
-      <!-- ================= MATERIAIS ================= -->
-      <div class="card" id="paneMateriais" style="display:none;">
-        <h2>📦 Materiais</h2>
-
-        <div class="grid2">
           <div>
-            <div class="small">Supervisão</div>
-            <select id="supMateriais" onchange="onChangeSup('materiais')"></select>
-          </div>
-          <div class="muted" style="display:flex; align-items:end;">
-            Preencha quantidades. OUTROS fica recolhido para não poluir.
+            <div class="small">Ações rápidas</div>
+            <button class="btnGhost" onclick="refreshUltimoPDF('uniformes')">📄 Último PDF</button>
           </div>
         </div>
 
@@ -461,7 +451,95 @@
         <details>
           <summary>
             <span>⚙️ Ações avançadas</span>
-            <span class="hint">Último pedido • PDF • PedidoId</span>
+            <span class="hint">Último pedido / modo / pedidoId</span>
+          </summary>
+
+          <div class="line"></div>
+
+          <div class="grid3">
+            <div>
+              <div class="small">Modo</div>
+              <select id="modoUniformes" onchange="modo.uniformes=this.value">
+                <option value="NOVA">NOVO PEDIDO</option>
+                <option value="ATUALIZAR">ALTERAR PEDIDO</option>
+              </select>
+            </div>
+            <div>
+              <div class="small">PedidoId (ALTERAR)</div>
+              <input id="pedidoIdUniformes" placeholder="(auto ao carregar último pedido)" />
+            </div>
+            <div style="display:flex; align-items:end; gap:10px;">
+              <button class="btnGhost" onclick="carregarUltimoPedido('uniformes')">↩️ Último pedido</button>
+              <button class="btnGhost" onclick="refreshUltimoPDF('uniformes')">📄 Último PDF</button>
+            </div>
+          </div>
+
+          <div class="small" id="infoUltimoUniformes" style="margin-top:10px;"></div>
+        </details>
+
+        <details style="margin-top:10px;">
+          <summary>
+            <span>➕ OUTROS (extras)</span>
+            <span class="hint">Itens fora da lista</span>
+          </summary>
+
+          <div class="line"></div>
+
+          <div class="grid3">
+            <div>
+              <div class="small">Tamanho</div>
+              <select id="outUniTam"></select>
+            </div>
+            <div>
+              <div class="small">Qtd</div>
+              <select id="outUniQtd">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+              </select>
+            </div>
+            <div>
+              <div class="small">Cor</div>
+              <select id="outUniCor"></select>
+            </div>
+          </div>
+
+          <button class="btn" style="margin-top:10px;" onclick="addOutroUniforme()">Adicionar</button>
+          <div id="outrosUniformesList" style="margin-top:10px;"></div>
+        </details>
+
+        <div class="line"></div>
+
+        <h3>Colaboradores</h3>
+        <div id="listaUniformes" style="margin-top:10px;"></div>
+        <div class="small" id="saveStatusUniformes" style="margin-top:10px;"></div>
+      </div>
+
+      <!-- ================= MATERIAIS ================= -->
+      <div class="card" id="paneMateriais" style="display:none;">
+        <h2>📦 Materiais</h2>
+
+        <div class="grid3">
+          <div>
+            <div class="small">Supervisão</div>
+            <select id="supMateriais" onchange="onChangeSup('materiais')"></select>
+          </div>
+          <div>
+            <div class="small">Ações rápidas</div>
+            <button class="btnGhost" onclick="refreshUltimoPDF('materiais')">📄 Último PDF</button>
+          </div>
+          <div>
+            <div class="small">Resumo</div>
+            <div class="muted" id="infoUltimoMateriais">—</div>
+          </div>
+        </div>
+
+        <div class="line"></div>
+
+        <details>
+          <summary>
+            <span>⚙️ Ações avançadas</span>
+            <span class="hint">Modo / pedidoId / último pedido</span>
           </summary>
 
           <div class="line"></div>
@@ -478,30 +556,28 @@
               <div class="small">PedidoId (ALTERAR)</div>
               <input id="pedidoIdMateriais" placeholder="(auto ao carregar último pedido)" />
             </div>
-            <div>
-              <div class="small">Ações</div>
-              <div class="grid2">
-                <button class="btnGhost" onclick="carregarUltimoPedido('materiais')">↩️ Último pedido</button>
-                <button class="btnGhost" onclick="refreshUltimoPDF('materiais')">📄 Último PDF</button>
-              </div>
+            <div style="display:flex; align-items:end; gap:10px;">
+              <button class="btnGhost" onclick="carregarUltimoPedido('materiais')">↩️ Último pedido</button>
+              <button class="btnGhost" onclick="refreshUltimoPDF('materiais')">📄 Último PDF</button>
             </div>
           </div>
-
-          <div class="small" id="infoUltimoMateriais" style="margin-top:10px;"></div>
         </details>
 
         <div class="line"></div>
 
-        <h3>Lista fixa</h3>
-        <div class="muted">Preencha a quantidade de cada item.</div>
-        <div id="listaMateriaisFixos" style="margin-top:10px;"></div>
+        <details open>
+          <summary>
+            <span>📋 Lista fixa</span>
+            <span class="hint">Quantidades</span>
+          </summary>
+          <div class="muted" style="margin-top:8px;">Preencha a quantidade de cada item.</div>
+          <div id="listaMateriaisFixos" style="margin-top:10px;"></div>
+        </details>
 
-        <div class="line"></div>
-
-        <details>
+        <details style="margin-top:10px;">
           <summary>
             <span>➕ OUTROS</span>
-            <span class="hint">Descrição + quantidade</span>
+            <span class="hint">Descrição + qtd</span>
           </summary>
 
           <div class="line"></div>
@@ -510,28 +586,34 @@
             <input id="matOutroDesc" placeholder="Descrição (ex.: Cabo USB)" />
             <input id="matOutroQtd" inputmode="numeric" placeholder="Qtd" />
           </div>
+
           <div class="grid2" style="margin-top:10px;">
-            <button class="btn" onclick="addMaterialOutro()">Adicionar</button>
+            <button class="btn2" onclick="addMaterialOutro()">Adicionar</button>
             <button class="btnGhost" onclick="clearMateriaisOutros()">Limpar</button>
           </div>
 
           <div id="listaMateriaisOutros" style="margin-top:10px;"></div>
         </details>
 
-        <div class="small" id="saveStatusMateriais" style="margin-top:12px;"></div>
+        <div class="small" id="saveStatusMateriais" style="margin-top:10px;"></div>
       </div>
 
       <!-- ================= EPIs ================= -->
       <div class="card" id="paneEPIs" style="display:none;">
         <h2>🦺 EPIs</h2>
 
-        <div class="grid2">
+        <div class="grid3">
           <div>
             <div class="small">Supervisão</div>
             <select id="supEPIs" onchange="onChangeSup('epis')"></select>
           </div>
-          <div class="muted" style="display:flex; align-items:end;">
-            Fixos + Botinas por tamanho ficam limpos e organizados.
+          <div>
+            <div class="small">Ações rápidas</div>
+            <button class="btnGhost" onclick="refreshUltimoPDF('epis')">📄 Último PDF</button>
+          </div>
+          <div>
+            <div class="small">Resumo</div>
+            <div class="muted" id="infoUltimoEPIs">—</div>
           </div>
         </div>
 
@@ -540,7 +622,7 @@
         <details>
           <summary>
             <span>⚙️ Ações avançadas</span>
-            <span class="hint">Último pedido • PDF • PedidoId</span>
+            <span class="hint">Modo / pedidoId / último pedido</span>
           </summary>
 
           <div class="line"></div>
@@ -557,29 +639,27 @@
               <div class="small">PedidoId (ALTERAR)</div>
               <input id="pedidoIdEPIs" placeholder="(auto ao carregar último pedido)" />
             </div>
-            <div>
-              <div class="small">Ações</div>
-              <div class="grid2">
-                <button class="btnGhost" onclick="carregarUltimoPedido('epis')">↩️ Último pedido</button>
-                <button class="btnGhost" onclick="refreshUltimoPDF('epis')">📄 Último PDF</button>
-              </div>
+            <div style="display:flex; align-items:end; gap:10px;">
+              <button class="btnGhost" onclick="carregarUltimoPedido('epis')">↩️ Último pedido</button>
+              <button class="btnGhost" onclick="refreshUltimoPDF('epis')">📄 Último PDF</button>
             </div>
           </div>
-
-          <div class="small" id="infoUltimoEPIs" style="margin-top:10px;"></div>
         </details>
-
-        <div class="line"></div>
-
-        <h3>Lista fixa</h3>
-        <div class="muted">Preencha a quantidade de cada EPI.</div>
-        <div id="listaEPIsFixos" style="margin-top:10px;"></div>
 
         <div class="line"></div>
 
         <details open>
           <summary>
-            <span>👞 Botinas</span>
+            <span>📋 Lista fixa</span>
+            <span class="hint">Quantidades</span>
+          </summary>
+          <div class="muted" style="margin-top:8px;">Preencha a quantidade de cada EPI.</div>
+          <div id="listaEPIsFixos" style="margin-top:10px;"></div>
+        </details>
+
+        <details style="margin-top:10px;">
+          <summary>
+            <span>🥾 Botinas</span>
             <span class="hint">Vários tamanhos</span>
           </summary>
 
@@ -588,8 +668,9 @@
           <div class="grid3">
             <input id="botTam" placeholder="Tamanho (ex.: 40)" />
             <input id="botQtd" inputmode="numeric" placeholder="Qtd" />
-            <button class="btn" onclick="addBotina()">Adicionar</button>
+            <button class="btn2" onclick="addBotina()">Adicionar</button>
           </div>
+
           <div class="grid2" style="margin-top:10px;">
             <button class="btnGhost" onclick="clearBotinas()">Limpar botinas</button>
             <div></div>
@@ -598,7 +679,7 @@
           <div id="listaBotinas" style="margin-top:10px;"></div>
         </details>
 
-        <div class="small" id="saveStatusEPIs" style="margin-top:12px;"></div>
+        <div class="small" id="saveStatusEPIs" style="margin-top:10px;"></div>
       </div>
 
       <!-- ================= PATRIMONIOS ================= -->
@@ -618,28 +699,24 @@
 
         <div class="line"></div>
 
-        <div class="chipRow">
-          <button id="btnPatModoLista" class="btnGhost" style="width:auto; padding:10px 12px;" onclick="setPatModo('LISTA')">📋 Lista</button>
-          <button id="btnPatModoColab" class="btnGhost" style="width:auto; padding:10px 12px;" onclick="setPatModo('COLABORADOR')">👤 Colaborador</button>
-          <div class="chip" id="patriInfo" style="margin-left:auto;">—</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btnGhost" id="btnPatModoLista" onclick="setPatModo('LISTA')" style="width:auto;">📋 Lista</button>
+          <button class="btnGhost" id="btnPatModoColab" onclick="setPatModo('COLABORADOR')" style="width:auto;">👤 Colaborador</button>
         </div>
 
-        <div id="listaPatrimonios" style="margin-top:12px;"></div>
+        <div class="small" id="patriInfo" style="margin-top:10px;"></div>
+        <div id="listaPatrimonios" style="margin-top:10px;"></div>
       </div>
 
     </div><!-- /app -->
   </div><!-- /wrap -->
 
-  <div class="footerBar" id="footerBar" style="display:none;">
-    <div class="inner">
-      <button class="btnGhost" onclick="reloadAll()">Recarregar</button>
-      <button class="btn" onclick="salvarAtual()">Salvar e Baixar PDF</button>
-      <button class="danger" onclick="logout()">Sair</button>
-    </div>
-  </div>
-
   <div class="toast" id="toast"></div>
   <div class="busy" id="busy"><div class="box">Processando…</div></div>
+
+  <!-- FAB -->
+  <button class="fab" id="fabSalvar" onclick="salvarAtual()" title="Salvar e baixar PDF">⬇️</button>
+  <div class="fabLabel">Salvar / PDF</div>
 
 <script>
 /** =============================
@@ -780,7 +857,7 @@ function forceDownload_(url, filename){
 }
 
 /** =============================
- * TABS
+ * MENU / TABS
  * ============================= */
 function setTab(t){
   tab = t;
@@ -790,16 +867,33 @@ function setTab(t){
   document.getElementById("tabEPIs").classList.toggle("active", t==="epis");
   document.getElementById("tabPatrimonios").classList.toggle("active", t==="patrimonios");
 
-  document.getElementById("paneUniformes").style.display = (t==="uniformes") ? "" : "none";
-  document.getElementById("paneMateriais").style.display = (t==="materiais") ? "" : "none";
-  document.getElementById("paneEPIs").style.display = (t==="epis") ? "" : "none";
-  document.getElementById("panePatrimonios").style.display = (t==="patrimonios") ? "" : "none";
+  const pU = document.getElementById("paneUniformes");
+  const pM = document.getElementById("paneMateriais");
+  const pE = document.getElementById("paneEPIs");
+  const pP = document.getElementById("panePatrimonios");
+
+  pU.style.display = (t==="uniformes") ? "" : "none";
+  pM.style.display = (t==="materiais") ? "" : "none";
+  pE.style.display = (t==="epis") ? "" : "none";
+  pP.style.display = (t==="patrimonios") ? "" : "none";
+
+  [pU,pM,pE,pP].forEach(p => p.classList.remove("paneAnim"));
+  const cur = (t==="uniformes")?pU:(t==="materiais")?pM:(t==="epis")?pE:pP;
+  cur.classList.add("paneAnim");
+
+  // fecha details abertos para manter limpo
+  document.querySelectorAll("details[open]").forEach(d => d.removeAttribute("open"));
+
+  // FAB
+  const fab = document.getElementById("fabSalvar");
+  if(t==="patrimonios") fab.style.display = "none";
+  else fab.style.display = "";
 }
 
 function setPatModo(m){
   patModo = m;
-  document.getElementById("btnPatModoLista").style.opacity = (m==="LISTA") ? "1" : ".75";
-  document.getElementById("btnPatModoColab").style.opacity = (m==="COLABORADOR") ? "1" : ".75";
+  document.getElementById("btnPatModoLista").classList.toggle("active", m==="LISTA");
+  document.getElementById("btnPatModoColab").classList.toggle("active", m==="COLABORADOR");
   renderPatrimonios(lastPatrimoniosCache || []);
 }
 
@@ -843,16 +937,13 @@ async function bootstrap(){
   // UI
   document.getElementById("cardLogin").style.display = "none";
   document.getElementById("app").style.display = "";
-  document.getElementById("footerBar").style.display = "";
 
   document.getElementById("pillDataRef").textContent = ctx.dataRef || "—";
   document.getElementById("pillGestor").textContent = (ctx.gestor?.nome || "—");
-  document.getElementById("badgeDataRef").textContent = ctx.dataRef || "—";
 
   document.getElementById("gestorNome").textContent = ctx.gestor?.nome || "—";
   document.getElementById("gestorCoord").textContent = ctx.gestor?.coordenacao || "—";
-  document.getElementById("gestorSups").textContent =
-    "Supervisões liberadas: " + ((ctx.gestor?.supervisoesLiberadas||[]).join("; ") || "—");
+  document.getElementById("gestorSups").textContent = (ctx.gestor?.supervisoesLiberadas||[]).join("; ") || "—";
 
   // combos
   const sups = buildSupList();
@@ -866,8 +957,10 @@ async function bootstrap(){
   fillSelect("outUniTam", tams);
   fillSelect("outUniCor", CORES_UNIFORME);
 
+  // init estado
   initStateFromCtx_();
 
+  // render inicial
   setTab("uniformes");
   renderUniformes();
   renderMateriais();
@@ -953,42 +1046,14 @@ function listColsBySup_(supSel){
 }
 
 /** =============================
- * UNIFORMES — seleção em massa + resumo
+ * Uniformes chips helper
  * ============================= */
-function setAllUniformes(on){
-  const supSel = document.getElementById("supUniformes").value || "SEM SUPERVISÃO";
-  const list = listColsBySup_(supSel);
-
-  // respeita o filtro de busca atual
-  const q = normKey(document.getElementById("buscaUniformes").value || "");
-  list.forEach(c=>{
-    const nome = String(c.colaborador||"").trim();
-    if(!nome) return;
-    if(q && !normKey(nome).includes(q)) return;
-
-    const k = colKey_(nome);
-    if(!formUniformes[k]) formUniformes[k] = { nome, on:true, tamanho:"M", qtd:1, cor:"VERDE" };
-    formUniformes[k].on = !!on;
-  });
-
+function setUniformeField(k, field, value){
+  if(!formUniformes[k]) return;
+  if(field==="qtd") formUniformes[k].qtd = Number(value)||1;
+  if(field==="tamanho") formUniformes[k].tamanho = String(value||"M").toUpperCase();
+  if(field==="cor") formUniformes[k].cor = String(value||"VERDE").toUpperCase();
   renderUniformes();
-}
-
-function calcUniformesResumo_(supSel){
-  const list = listColsBySup_(supSel);
-  let sel=0, itens=0;
-  list.forEach(c=>{
-    const nome = String(c.colaborador||"").trim();
-    const k = colKey_(nome);
-    const st = formUniformes[k];
-    if(st?.on){
-      sel++;
-      itens += (Number(st.qtd||1)||1);
-    }
-  });
-  // OUTROS soma no total de itens
-  (outrosUniformes||[]).forEach(o=>{ itens += (Number(o.qtd||0)||0); });
-  return { total:list.length, selecionados:sel, itens };
 }
 
 /** =============================
@@ -996,23 +1061,14 @@ function calcUniformesResumo_(supSel){
  * ============================= */
 function renderUniformes(){
   const supSel = document.getElementById("supUniformes").value || "SEM SUPERVISÃO";
-  let list = listColsBySup_(supSel);
-
-  const q = normKey(document.getElementById("buscaUniformes").value || "");
-  if(q){
-    list = list.filter(c => normKey(c.colaborador||"").includes(q));
-  }
+  const list = listColsBySup_(supSel);
 
   const el = document.getElementById("listaUniformes");
   const hint = document.getElementById("uniHint");
-  hint.textContent = `Supervisão: ${supSel} | Nesta supervisão: ${list.length}`;
-
-  const r = calcUniformesResumo_(supSel);
-  document.getElementById("uniResumo").textContent =
-    `Resumo: ${r.selecionados}/${r.total} selecionados • ${r.itens} itens`;
+  hint.textContent = `Supervisão: ${supSel} | Total: ${(ctx.colaboradores||[]).length} | Nesta: ${list.length}`;
 
   if(!list.length){
-    el.innerHTML = `<div class="muted">Nenhum colaborador encontrado.</div>`;
+    el.innerHTML = `<div class="muted">Nenhum colaborador encontrado para esta supervisão.</div>`;
     return;
   }
 
@@ -1037,19 +1093,48 @@ function renderUniformes(){
         <div>
           <div class="nm">${esc(nome)}</div>
           <div class="sub">${esc(String(c.supervisao||""))}</div>
+
+          <div class="mobileOnly" style="display:none;">
+            <div class="chipsGroup">
+              ${tamanhos.slice(0,10).map(t=>`
+                <button class="chipBtn ${String(st.tamanho).toUpperCase()===String(t).toUpperCase()?"active":""}"
+                  onclick="setUniformeField('${esc(k)}','tamanho','${esc(t)}')">${esc(t)}</button>
+              `).join("")}
+            </div>
+
+            <div class="chipsGroup">
+              ${[1,2].map(n=>`
+                <button class="chipBtn ${(Number(st.qtd)===n)?"active":""}"
+                  onclick="setUniformeField('${esc(k)}','qtd','${n}')">${n}x</button>
+              `).join("")}
+            </div>
+
+            <div class="chipsGroup">
+              ${CORES_UNIFORME.map(cor=>`
+                <button class="chipBtn ${String(st.cor).toUpperCase()===String(cor).toUpperCase()?"active":""}"
+                  onclick="setUniformeField('${esc(k)}','cor','${esc(cor)}')">${esc(cor)}</button>
+              `).join("")}
+            </div>
+          </div>
         </div>
 
-        <select onchange="formUniformes['${esc(k)}'].tamanho = this.value">
-          ${tamanhos.map(t=>`<option value="${esc(t)}" ${String(st.tamanho).toUpperCase()===String(t).toUpperCase()?"selected":""}>${esc(t)}</option>`).join("")}
-        </select>
+        <div class="desktopOnly">
+          <select onchange="formUniformes['${esc(k)}'].tamanho = this.value">
+            ${tamanhos.map(t=>`<option value="${esc(t)}" ${String(st.tamanho).toUpperCase()===String(t).toUpperCase()?"selected":""}>${esc(t)}</option>`).join("")}
+          </select>
+        </div>
 
-        <select onchange="formUniformes['${esc(k)}'].qtd = Number(this.value)||1; renderUniformes()">
-          ${[1,2].map(n=>`<option value="${n}" ${Number(st.qtd)===n?"selected":""}>${n}</option>`).join("")}
-        </select>
+        <div class="desktopOnly">
+          <select onchange="formUniformes['${esc(k)}'].qtd = Number(this.value)||1; renderUniformes()">
+            ${[1,2].map(n=>`<option value="${n}" ${Number(st.qtd)===n?"selected":""}>${n}</option>`).join("")}
+          </select>
+        </div>
 
-        <select onchange="formUniformes['${esc(k)}'].cor = this.value">
-          ${CORES_UNIFORME.map(cor=>`<option value="${esc(cor)}" ${String(st.cor).toUpperCase()===String(cor).toUpperCase()?"selected":""}>${esc(cor)}</option>`).join("")}
-        </select>
+        <div class="desktopOnly">
+          <select onchange="formUniformes['${esc(k)}'].cor = this.value">
+            ${CORES_UNIFORME.map(cor=>`<option value="${esc(cor)}" ${String(st.cor).toUpperCase()===String(cor).toUpperCase()?"selected":""}>${esc(cor)}</option>`).join("")}
+          </select>
+        </div>
       </div>
     `;
   }).join("");
@@ -1067,14 +1152,12 @@ function addOutroUniforme(){
 
   outrosUniformes.push({ tamanho, qtd, cor });
   renderOutrosUniformes();
-  renderUniformes();
   showToast("OUTROS adicionado.");
 }
 
 function removeOutroUniforme(i){
   outrosUniformes.splice(i,1);
   renderOutrosUniformes();
-  renderUniformes();
 }
 
 function renderOutrosUniformes(){
@@ -1222,7 +1305,7 @@ function renderBotinas(){
 }
 
 /** =============================
- * SALVAR (Uniformes / Materiais / EPIs) + PDF DOWNLOAD
+ * SALVAR + PDF DOWNLOAD
  * ============================= */
 async function salvarAtual(){
   if(tab==="uniformes") return salvarUniformes();
@@ -1346,6 +1429,7 @@ async function salvarEPIsUI(){
   const modoSel = document.getElementById("modoEPIs").value;
 
   const itens = [];
+
   EPIS_FIXOS.forEach(n=>{
     const un = Number(episFixosQtd[n]||0)||0;
     if(un>0) itens.push({ epi:n, un });
@@ -1416,7 +1500,7 @@ async function refreshUltimoPDF(tipo){
     el.innerHTML = `<span class="muted">Nenhum PDF encontrado para esta supervisão.</span>`;
     return;
   }
-  el.innerHTML = `Último PDF: <a href="${esc(pdfUrl)}" target="_blank" rel="noopener">abrir</a>`;
+  el.innerHTML = `Último PDF: <a href="${esc(pdfUrl)}" target="_blank" rel="noopener">link</a>`;
 }
 
 async function carregarUltimoPedido(tipo){
@@ -1528,7 +1612,7 @@ async function carregarUltimoPedido(tipo){
 }
 
 /** =============================
- * PATRIMONIOS (LISTA / COLABORADOR) — COLAB MINIMIZADO ✅
+ * PATRIMONIOS
  * ============================= */
 let lastPatrimoniosCache = [];
 
@@ -1544,7 +1628,7 @@ async function carregarPatrimonios(){
   setBusy(false); setBtnDisabled(false);
 
   if(!res.ok){
-    document.getElementById("patriInfo").textContent = "Erro";
+    document.getElementById("patriInfo").innerHTML = `<span class="err">${esc(res.error||"Erro")}</span>`;
     showToast(res.error || "Erro ao consultar.");
     return;
   }
@@ -1552,8 +1636,8 @@ async function carregarPatrimonios(){
   const itens = Array.isArray(res.itens) ? res.itens : [];
   lastPatrimoniosCache = itens;
 
-  document.getElementById("patriInfo").textContent =
-    `Itens: ${itens.length} • Modo: ${patModo}`;
+  document.getElementById("patriInfo").innerHTML =
+    `<span class="ok">Itens: ${itens.length}</span> <span class="muted">| Modo: ${esc(patModo)}</span>`;
 
   renderPatrimonios(itens);
 }
@@ -1567,21 +1651,17 @@ function renderPatrimonios(itens){
 
   const arr = itens.map(it=>{
     const d = Number(it.diasSemLeitura||it.dias||0) || 0;
-    return {
-      ...it,
-      _dias:d,
-      _colName: String(it.funcionario||it.colaborador||"").trim() || "(Sem nome)",
-      _colKey: normKey(it.funcionario||it.colaborador||"")
-    };
+    return { ...it, _dias:d, _col:normKey(it.funcionario||it.colaborador||"") };
   });
 
   if(patModo === "LISTA"){
     arr.sort((a,b)=> (b._dias - a._dias) || normKey(a.patrimonio).localeCompare(normKey(b.patrimonio)));
+
     el.innerHTML = arr.slice(0,400).map(it=>`
       <div class="itemCard">
         <div style="font-weight:1000;">${esc(it.patrimonio||"-")} — ${esc(it.identificacao||"")}</div>
         <div class="muted">
-          ${esc(it._colName)} • ${esc(it.supervisao||"")} • ${esc(it.coordenacao||"")}<br>
+          ${esc(it.funcionario||"")} • ${esc(it.supervisao||"")} • ${esc(it.coordenacao||"")}<br>
           Última leitura: ${esc(it.ultimaLeitura||"-")} • Dias sem leitura: <b>${esc(it._dias)}</b>
         </div>
       </div>
@@ -1589,31 +1669,29 @@ function renderPatrimonios(itens){
     return;
   }
 
-  // ✅ COLABORADOR: acordeão minimizado
   const map = new Map();
   arr.forEach(it=>{
-    if(!map.has(it._colKey)) map.set(it._colKey, { nome: it._colName, itens: [] });
-    map.get(it._colKey).itens.push(it);
+    const nome = String(it.funcionario||it.colaborador||"").trim() || "(Sem nome)";
+    const k = normKey(nome);
+    if(!map.has(k)) map.set(k, { nome, itens:[] });
+    map.get(k).itens.push(it);
   });
 
-  const groups = Array.from(map.values())
-    .sort((a,b)=> normKey(a.nome).localeCompare(normKey(b.nome)));
+  const groups = Array.from(map.values()).sort((a,b)=> normKey(a.nome).localeCompare(normKey(b.nome)));
 
   el.innerHTML = groups.map(g=>{
     g.itens.sort((a,b)=> (b._dias - a._dias) || normKey(a.patrimonio).localeCompare(normKey(b.patrimonio)));
-    const maxDias = g.itens.reduce((m,x)=>Math.max(m, Number(x._dias||0)), 0);
-    const count = g.itens.length;
+
+    const maxDias = Math.max(...g.itens.map(x=>x._dias||0), 0);
 
     return `
       <details class="itemCard">
         <summary>
           <span>👤 ${esc(g.nome)}</span>
-          <span class="hint">${count} itens • máx ${esc(maxDias)} dias</span>
+          <span class="hint">Itens: ${g.itens.length} • Máx: ${maxDias} dias</span>
         </summary>
 
-        <div class="line"></div>
-
-        <div>
+        <div style="margin-top:10px;">
           ${g.itens.map(it=>`
             <div style="padding:10px 0; border-top:1px solid rgba(255,255,255,.10);">
               <div style="font-weight:1000;">${esc(it.patrimonio||"-")} — ${esc(it.identificacao||"")}</div>
@@ -1629,7 +1707,7 @@ function renderPatrimonios(itens){
 }
 
 /** =============================
- * FOOTER ACTIONS
+ * AÇÕES GERAIS
  * ============================= */
 async function reloadAll(){
   if(!token){ location.reload(); return; }
@@ -1639,6 +1717,9 @@ function logout(){
   token = "";
   location.reload();
 }
+
+/** INIT */
+window.addEventListener("load", ()=>{});
 </script>
 
 </body>
